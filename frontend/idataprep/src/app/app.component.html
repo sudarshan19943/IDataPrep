@@ -8,26 +8,75 @@
     <mat-horizontal-stepper #stepper>
       <mat-step [stepControl]="firstStep">
         <div class="container">
-          <h2 class="text-center">Step 1</h2>
+          <h2 class="text-center">Step 1: Upload your Dataset</h2>
+          <div class="jumbotron">
           <form class="example-form">
-              <input type="file" class="file_box">
-              <button type="submit" class="btn btn-lg btn-primary upload_btn" disabled>Upload</button>
-            </form>            
-          <button mat-button matStepperNext color="primary">Next</button>
+              <input required type="file" class="file_box" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel">
+              <button  type="submit" class="btn btn-lg btn-primary upload_btn" disabled>Upload</button>
+            </form>  
+          </div>          
+          <button mat-button matStepperNext class="btn btn-lg btn-dark upload_btn">Next</button>
         </div>
       </mat-step>
       <mat-step [stepControl]="secondStep">
-        <div>
-          Step 2
+        <div class="container">
+          <h2 class="text-center">Step 2: Customize your options</h2>
+          <div class="jumbotron no_bg">
+            <div class="row">
+              <div class="col-sm-4">
+                      <mat-chip class="column_name"  selected [color]="primary">
+                        Column 1
+                      </mat-chip>
+              </div>
+              <div class="col-sm-8">
+                <div class="row">
+                <div class="col-sm-6">
+                  <mat-form-field>
+                      <mat-label>Type of Attribute</mat-label>
+                      <mat-select #cat>
+                        <mat-option value="Categorial">
+                          Categorial
+                        </mat-option>
+                        <mat-option value="Numeric">
+                          Numeric
+                        </mat-option>
+                      </mat-select>
+                    </mat-form-field>
+                  </div>
+                  <div class="col-sm-6" *ngIf="cat.value == 'Categorial'">
+                    <mat-form-field class="example-chip-list">
+                        <mat-chip-list #chipList aria-label="Fruit selection">
+                          <mat-chip *ngFor="let category of categories" [selectable]="selectable"
+                                   [removable]="removable" (removed)="remove(category)">
+                            {{category.name}}
+                            <mat-icon matChipRemove *ngIf="removable">cancel</mat-icon>
+                          </mat-chip>
+                          <input placeholder="Add a Category..."
+                                 [matChipInputFor]="chipList"
+                                 [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
+                                 [matChipInputAddOnBlur]="addOnBlur"
+                                 (matChipInputTokenEnd)="add($event)">
+                        </mat-chip-list>
+                      </mat-form-field>
+                    </div>
+                    <div class="col-sm-6" *ngIf="cat.value == 'Numeric'">
+                        <mat-checkbox>Zero Allowed</mat-checkbox>
+                        <mat-checkbox>Negative values Allowed</mat-checkbox>
+                    </div>
+              </div>
+            </div>
+            </div>
+          </div>
         </div>
+        <button mat-button matStepperNext class="btn btn-lg btn-dark upload_btn">Next</button>
+        <button mat-button matStepperPrevious class="btn btn-lg btn-dark upload_btn">Back</button>
       </mat-step>
       <mat-step>
         <div>
           Step 3
         </div>
         <div>
-          <button mat-button matStepperPrevious>Back</button>
-          <button mat-button (click)="stepper.reset()">Reset</button>
+          <button mat-button matStepperPrevious class="btn btn-lg btn-dark upload_btn">Back</button>
         </div>
       </mat-step>
     </mat-horizontal-stepper>

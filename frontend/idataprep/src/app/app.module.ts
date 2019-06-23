@@ -8,6 +8,11 @@ import {BrowserAnimationsModule} from '@angular/platform-browser/animations';
  import {MatStepperModule} from '@angular/material/stepper';
  import {MatButtonModule} from '@angular/material/button';
  import {MatInputModule} from '@angular/material/input';
+ import {MatChipsModule} from '@angular/material/chips';
+ import {MatSelectModule} from '@angular/material/select';
+ import {MatIconModule} from '@angular/material/icon';
+ import {MatCheckboxModule} from '@angular/material/checkbox';
+
 
 @NgModule({
   declarations: [
@@ -19,7 +24,11 @@ import {BrowserAnimationsModule} from '@angular/platform-browser/animations';
     BrowserAnimationsModule,
     MatStepperModule,
     MatButtonModule,
-    MatInputModule
+    MatInputModule,
+    MatChipsModule,
+    MatSelectModule,
+    MatIconModule,
+    MatCheckboxModule
   ],
   providers: [],
   bootstrap: [AppComponent]

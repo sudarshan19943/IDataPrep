@@ -6,4 +6,23 @@
     display: block;
     width: 100px;
     margin: 10px auto;
+    cursor: pointer;
+}
+.btn-dark.upload_btn{
+    margin-top: 50px;
+    font-size: 20px;
+    border: 1px solid;
+}
+.no_bg{
+    background: none;
+}
+.column_name{
+    margin: 10px auto !important;
+    padding-top: 10px !important;
+    padding-bottom: 10px !important;
+    height: auto;
+    width: 85%;
+}
+mat-form-field{
+    width: 95% !important;
 }

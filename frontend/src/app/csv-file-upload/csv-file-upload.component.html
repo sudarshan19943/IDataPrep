@@ -7,11 +7,11 @@
       <div class="form-check d-flex flex-column mt-3">
           <label class="form-check-label text-left">
             <input type="checkbox" class="form-check-input" name="has_header" id="has_header" (input)="hasHeader = has_Header.checked" [checked]="hasHeader" #has_Header>
-            File has Header
+            My dataset has a header
           </label>
           <label class="form-check-label text-left">
             <input type="checkbox" class="form-check-input" name="for_classification" id="for_classification" (input)="forClassificationChanged.emit(for_classification.checked)" [checked]="forClassification" #for_classification>
-            Preparing For Classification
+            I am preparing for classification
           </label>
           <button mat-stroked-button color="primary" class="mt-5 p-1 text-decoration-none" (click)="sendFile()"><i class="fas fa-upload"></i> Send</button>
 

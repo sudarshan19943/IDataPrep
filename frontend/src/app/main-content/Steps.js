@@ -1,15 +1,16 @@
 let Steps = {};
 
-Steps.typeCleanOnly = [
+Steps.firstSteps = [
   {title: "Select a CSV file"},
-  {title: "Edit Feature Preferences"},
+  {title: "Edit Feature Preferences"}
+];
+
+Steps.typeCleanOnly = [
   {title: "Cleaning Dataset"},
   {title: "Done"},
 ];
 
 Steps.typeCleanAndClassify = [
-  {title: "Select a CSV file"},
-  {title: "Edit Feature Preferences"},
   {title: "Cleaning Dataset"},
   {title: "Classification Algorithm Suggestion"},
   {title: "Done"},

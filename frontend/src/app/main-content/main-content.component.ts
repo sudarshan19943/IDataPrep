@@ -1,5 +1,5 @@
 import { Component, OnInit, ViewChild, AfterViewInit, ChangeDetectorRef } from '@angular/core';
-import { typeCleanOnly, typeCleanAndClassify } from './Steps.js';
+import { firstSteps, typeCleanOnly, typeCleanAndClassify } from './Steps.js';
 import { MatHorizontalStepper } from '@angular/material/stepper';
 
 @Component({
@@ -8,13 +8,20 @@ import { MatHorizontalStepper } from '@angular/material/stepper';
   styleUrls: ['./main-content.component.scss']
 })
 export class MainContentComponent implements OnInit, AfterViewInit {
-  steps = typeCleanOnly;
-  forClassification = false;
+  firstSteps = firstSteps;
+  otherSteps = typeCleanOnly;
+  forClassification = true;
   @ViewChild('stepper', {static: true}) stepper: MatHorizontalStepper;
 
   constructor(private cdr: ChangeDetectorRef) { }
 
-  ngOnInit() {}
+  ngOnInit() {
+    if (this.forClassification) {
+      this.otherSteps = typeCleanAndClassify;
+    } else {
+      this.otherSteps = typeCleanOnly;
+    }
+  }
 
   ngAfterViewInit() {
     // dev purposes
@@ -27,18 +34,22 @@ export class MainContentComponent implements OnInit, AfterViewInit {
   }
 
   markStepCompleted(i: number) {
+    console.log('Marking Step ' + i + ' as Completed');
     this.stepper.selectedIndex = i;
     this.stepper.selected.completed = true;
     this.cdr.detectChanges();
   }
 
-  togglePurpose() {
-    this.forClassification = !this.forClassification;
+  forClassificationChange(event: any) {
+    this.forClassification = event;
     if (this.forClassification) {
-      this.steps = typeCleanAndClassify;
+      this.otherSteps = typeCleanAndClassify;
     } else {
-      this.steps = typeCleanOnly;
+      this.otherSteps = typeCleanOnly;
     }
   }
 
+  test() {
+    console.log("Blah")
+  }
 }

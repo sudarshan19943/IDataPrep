@@ -30,7 +30,7 @@ export class MainContentComponent implements OnInit, AfterViewInit {
     //   this.markStepCompleted(2);
     //   this.markStepCompleted(3);
     //   this.stepper.selectedIndex = 0;
-    //   this.cdr.detectChanges();
+    this.cdr.detectChanges();
   }
 
   markStepCompleted(i: number) {
@@ -56,6 +56,6 @@ export class MainContentComponent implements OnInit, AfterViewInit {
 
     // for dev only
   test() {
-    console.log("Testing...");
+    console.log('Testing...');
   }
 }

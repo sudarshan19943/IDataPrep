@@ -15,9 +15,9 @@ $(document).ready(function() {
 		$("#messages").append('<li>'+msg+'</li>');
 		console.log('Received message');
 	});
-	$('#sendbutton').on('click', function(data) {
+	$('#sendbutton').on('click', function() {
         console.log($("#myFile")[0].files[0].name)
-        parseBytes($("#myFile")[0].files[0],socket);
+        parseBytes($("#myFile")[0].files[0],true,socket);
 	});
 });
 </script>

@@ -1,12 +1,14 @@
-function parseBytes(file, socket){
+function parseBytes(file,headerFlag, socket){
     var reader = new FileReader();
+    var flag = headerFlag;
 
-    reader.onloadend = function(datafile) 
+    reader.onload= function(datafile) 
     {
-      console.log(datafile.target.result)
-      socket.emit('loaddata', datafile.target.result);
+      var  file =  datafile.target.result;
+      console.log(file);
+      socket.emit('loaddata',file,flag);
     };
     
-    reader.readAsArrayBuffer(file);
+    reader.readAsText(file);
 }
 

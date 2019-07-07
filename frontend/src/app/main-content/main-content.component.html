@@ -1,5 +1,22 @@
-<div class="container-fluid">
-  <p>
-    main-content works!
-  </p>
+<div class="container-fluid main-content">
+  <mat-horizontal-stepper [linear]=true labelPosition="bottom" #stepper>
+    <mat-step *ngFor="let step of steps; index as i;" completed=false optional=false>
+      <ng-template matStepLabel>{{ steps[i].title }}</ng-template>
+      <div class="p-3">
+        <div *ngIf="i == steps.length-1; else other_buttonset">
+            <div class="d-flex">
+                <button mat-button color="primary" matStepperPrevious><i class="fas fa-arrow-circle-left"></i> Back</button>
+                <button mat-raised-button color="warn" class="ml-auto" (click)="stepper.reset();">Reset <i class="fas fa-trash-alt"></i></button>
+            </div>
+        </div>
+        <ng-template #other_buttonset>
+            <div class="d-flex">
+                <button *ngIf="i != 0;" mat-button matStepperPrevious color="primary"><i class="fas fa-arrow-circle-left"></i> Back</button>
+                <button mat-raised-button color="primary" class="ml-auto" (click)="stepper.next();">Next <i class="fas fa-arrow-circle-right"></i></button>
+            </div>
+        </ng-template>
+      </div>
+    </mat-step>
+</mat-horizontal-stepper>
+
 </div>

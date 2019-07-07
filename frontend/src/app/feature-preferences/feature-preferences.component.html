@@ -11,6 +11,7 @@
               matInput
               placeholder="Feature Name"
               value="{{ feature.name }}"
+              (input)="onFeatureNameInput(i, $event)"
             />
           </mat-form-field>
         </div>

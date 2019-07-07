@@ -64,6 +64,10 @@ export class FeaturePreferencesComponent implements OnInit {
     this.featuresReceived[featureIndex].preferences.negativeAllowed = event.checked;
   }
 
+  onFeatureNameInput(featureIndex, event: any) {
+    this.featuresReceived[featureIndex].name = event.target.value;
+  }
+
   saveAndStartProcessing() {
     this.featuresReceived.forEach(feature => {
       if (feature.type === this.FeatureType.t1) {

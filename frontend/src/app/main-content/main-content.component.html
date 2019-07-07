@@ -28,7 +28,7 @@
           <div *ngIf="i == otherSteps.length-1; else other_buttonset">
               <div class="d-flex">
                   <button mat-button color="primary" matStepperPrevious><i class="fas fa-arrow-circle-left"></i> Back</button>
-                  <button [class.d-none]="stepper.selected && !stepper.selected.completed" mat-raised-button color="warn" class="ml-auto" (click)="stepper.reset();">Reset <i class="fas fa-trash-alt"></i></button>
+                  <button [class.d-none]="stepper.selected && !stepper.selected.completed" mat-raised-button color="warn" class="ml-auto" (click)="resetAll()">Reset <i class="fas fa-trash-alt"></i></button>
               </div>
           </div>
           <ng-template #other_buttonset>

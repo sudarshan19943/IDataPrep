@@ -10,7 +10,7 @@ import { MatHorizontalStepper } from '@angular/material/stepper';
 export class MainContentComponent implements OnInit, AfterViewInit {
   firstSteps = firstSteps;
   otherSteps = typeCleanOnly;
-  forClassification = true;
+  forClassification = false;
   @ViewChild('stepper', {static: true}) stepper: MatHorizontalStepper;
 
   constructor(private cdr: ChangeDetectorRef) { }
@@ -24,13 +24,13 @@ export class MainContentComponent implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit() {
-    // dev purposes
-      this.markStepCompleted(0);
-      this.markStepCompleted(1);
-      this.markStepCompleted(2);
-      this.markStepCompleted(3);
-      this.stepper.selectedIndex = 0;
-      this.cdr.detectChanges();
+    // // dev purposes
+    //   this.markStepCompleted(0);
+    //   this.markStepCompleted(1);
+    //   this.markStepCompleted(2);
+    //   this.markStepCompleted(3);
+    //   this.stepper.selectedIndex = 0;
+    //   this.cdr.detectChanges();
   }
 
   markStepCompleted(i: number) {
@@ -38,6 +38,7 @@ export class MainContentComponent implements OnInit, AfterViewInit {
     this.stepper.selectedIndex = i;
     this.stepper.selected.completed = true;
     this.cdr.detectChanges();
+    this.stepper.next();
   }
 
   forClassificationChange(event: any) {
@@ -49,7 +50,12 @@ export class MainContentComponent implements OnInit, AfterViewInit {
     }
   }
 
+  resetAll() {
+    this.stepper.reset();
+  }
+
+    // for dev only
   test() {
-    console.log("Blah")
+    console.log("Testing...");
   }
 }

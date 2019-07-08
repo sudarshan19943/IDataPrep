@@ -71,10 +71,9 @@ def process_data(flag):
 		for i in range(len(dataframe_without_headers.columns)):
 			names.append(i)
 		dataframe_with_headers = pd.read_csv('uncleaned.csv', names=names)
-		send_header(dataframe_with_headers)
-		check_column_type(dataframe_with_headers)
-
-
+	
+	send_header(dataframe_with_headers)
+	check_column_type(dataframe_with_headers)
 
 
 

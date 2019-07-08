@@ -15,15 +15,28 @@ $(document).ready(function() {
 		$("#messages").append('<li>'+msg+'</li>');
 		console.log('Received message');
 	});
+
+	socket.on('headers',function(data){
+		console.log("Inside headers");
+		$('#headersDiv').append(data);
+	});
+
+	socket.on('featuresReceivedFromBackend',function(data){
+		console.log("Inside featuresReceived");
+		$('#featureTypeDiv').append(data);
+	});
+
 	$('#sendbutton').on('click', function() {
         console.log($("#myFile")[0].files[0].name)
-        parseBytes($("#myFile")[0].files[0],true,socket);
+        parseBytes($("#myFile")[0].files[0],false,socket);
 	});
 });
 </script>
 <script src="index.js"></script>
 <ul id="messages"></ul>
 <input type="text" id="myMessage">
+<div id = "headersDiv"></div>
+<div id = "featureTypeDiv"></div>
 <input type="file" id="myFile">
 <button id="sendbutton">Send</button>
 </body>

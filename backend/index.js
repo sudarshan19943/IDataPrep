@@ -1,4 +1,4 @@
-function parseBytes(file,jsonData,headersFlag, taskFlag,socket){
+function parseBytes(file,jsonData,headersFlag,taskFlag,socket){
     var reader = new FileReader();
 
 

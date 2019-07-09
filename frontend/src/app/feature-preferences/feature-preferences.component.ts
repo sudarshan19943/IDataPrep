@@ -2,6 +2,7 @@ import { Component, OnInit, EventEmitter, Output } from '@angular/core';
 import {sent, received} from './Features'
 import { MatChipInputEvent } from '@angular/material/chips';
 import {COMMA, ENTER} from '@angular/cdk/keycodes';
+import { DataService } from '../data.service';
 
 @Component({
   selector: 'app-feature-preferences',
@@ -14,12 +15,15 @@ export class FeaturePreferencesComponent implements OnInit {
   readonly separatorKeysCodes: number[] = [ENTER, COMMA];
   FeatureType = {'t1': 'numeric', 't2': 'categorical'};
   featuresReceived;
+  ready = false;
 
-  constructor() { }
+  constructor(private dataservice: DataService) { }
 
   ngOnInit() {
-    this.onFeaturesReceived(received);
-    console.log(this.featuresReceived);
+    this.dataservice.featuresReady.subscribe(features => {
+      this.onFeaturesReceived(features);
+      this.ready = true;
+    });
   }
 
   onFeaturesReceived(_received: any) {
@@ -69,16 +73,20 @@ export class FeaturePreferencesComponent implements OnInit {
   }
 
   saveAndStartProcessing() {
-    this.featuresReceived.forEach(feature => {
-      if (feature.type === this.FeatureType.t1) {
-        delete feature.preferences.categories;
-      } else if (feature.type === this.FeatureType.t2) {
-        delete feature.preferences.negativeAllowed;
-        delete feature.preferences.zeroAllowed;
-      }
-    });
-    console.log(this.featuresReceived);
-    this.completed.emit(true);
+    if (null != this.featuresReceived) {
+      this.featuresReceived.forEach(feature => {
+        if (feature.type === this.FeatureType.t1) {
+          delete feature.preferences.categories;
+        } else if (feature.type === this.FeatureType.t2) {
+          delete feature.preferences.negativeAllowed;
+          delete feature.preferences.zeroAllowed;
+        }
+      });
+      console.log(this.featuresReceived);
+      this.dataservice.sendFeaturesPayload(this.featuresReceived, this.completed);
+    } else {
+      alert('Please wait');
+    }
   }
 
 }

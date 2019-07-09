@@ -82,7 +82,6 @@ export class FeaturePreferencesComponent implements OnInit {
           delete feature.preferences.zeroAllowed;
         }
       });
-      console.log(this.featuresReceived);
       this.dataservice.sendFeaturesPayload(this.featuresReceived, this.completed);
     } else {
       alert('Please wait');

@@ -100,7 +100,7 @@ export class DataService {
 
   connect() {
     const _this = this;
-    this.setStatus('Busy', 'Attempting to Connect to Socket...');
+    this.setStatus('Busy', 'Attempting to Connect to Preprocessing Server...');
     this.socket = io(environment.ws_url);
 
     this.socket.on('connect', data => {
@@ -111,7 +111,7 @@ export class DataService {
     });
 
     this.socket.on('disconnect', data => {
-      _this.setStatus('Error', 'Disconnected');
+      _this.setStatus('Error', 'User Disconnected. Attempting to Reconnect...');
       _this.socket.send('User Disconnected. Attempting to Reconnect...');
       _this.connectionReady = false;
     });
@@ -138,14 +138,14 @@ export class DataService {
       _this.cleaningStepComplete.emit();
     });
 
-    this.socket.on('cleaedDatasetOutput', (data) => {
+    this.socket.on('cleanedDatasetOutput', (data) => {
       _this.setStatus('Busy', 'Preparing Cleaned Dataset for download...');
       _this.cleanedFileReady.emit(data);
     });
 
-    // this.socket.on('stepVisualisationData', function(step) {
+    // this.socket.on('cleaningStepVisualisationData', function(step) {
     // _this.socket.send('Received Visualization Data');
-    //   _this.nextCleaningStep.emit(step);
+    //   _this.nextCleaningStepViz.emit(step);
     // });
 
     this.socket.on('featuresReceivedFromBackend', function(data) {

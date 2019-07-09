@@ -7,6 +7,8 @@ import { Component, OnInit } from '@angular/core';
 })
 export class DatasetCleaningComponent implements OnInit {
 
+  ready = false;
+
   constructor() { }
 
   ngOnInit() {

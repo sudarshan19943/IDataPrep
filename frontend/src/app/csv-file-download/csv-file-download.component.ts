@@ -8,6 +8,7 @@ import { Component, OnInit, Output, EventEmitter } from '@angular/core';
 export class CsvFileDownloadComponent implements OnInit {
 
   @Output() completed = new EventEmitter<boolean>();
+  ready = false;
 
   constructor() { }
 

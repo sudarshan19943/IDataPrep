@@ -6,6 +6,7 @@ import { environment } from '../environments/environment';
   providedIn: 'root'
 })
 export class DataService {
+
   applicationStatus = '';
   connectionReady: boolean;
   statusColor = { ready: 'green', busy: '#ff8f00', error: 'red' };
@@ -15,6 +16,8 @@ export class DataService {
 
   fileLoaded: EventEmitter<any> = new EventEmitter();
   featuresReady: EventEmitter<any> = new EventEmitter();
+  nextCleaningStep: EventEmitter<any> = new EventEmitter();
+  cleaningStepComplete: EventEmitter<any> = new EventEmitter();
 
   private socket;
 
@@ -118,20 +121,32 @@ export class DataService {
     });
 
     this.socket.on('statusUpdate', update => {
-      _this.socket.send('User Reconnected');
+      _this.socket.send('Received Status Update');
       _this.setStatus('Busy', update);
       _this.connectionReady = true;
     });
 
-    this.socket.on('headers', function(data) {
-      _this.setStatus('Busy', 'Headers...');
+    this.socket.on('cleaningStep', step => {
+      _this.socket.send('Received Cleaning Step');
+      _this.setStatus('Busy', step + ' in progress...');
+      _this.nextCleaningStep.emit(step + '...');
     });
 
+    this.socket.on('cleaningStepComplete', () => {
+      _this.setStatus('Busy', 'Consolidating Cleaned Dataset...');
+      _this.cleaningStepComplete.emit();
+    });
+
+    // this.socket.on('stepVisualisationData', function(step) {
+    // _this.socket.send('Received Visualization Data');
+    //   _this.nextCleaningStep.emit(step);
+    // });
+
     this.socket.on('featuresReceivedFromBackend', function(data) {
+      _this.socket.send('Received Features From Backend');
       data = JSON.parse(data);
       _this.setStatus('Busy', 'Receiving Features From Backend...');
       _this.featuresReady.emit(data);
-      console.log(data);
       _this.setStatus('Ready', 'Ready to clean...');
     });
   }

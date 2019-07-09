@@ -1,5 +1,6 @@
 import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -16,6 +17,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatSelectModule } from '@angular/material/select';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatIconModule } from '@angular/material/icon';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 
 import { CsvFileUploadComponent } from './csv-file-upload/csv-file-upload.component';
 import { FeaturePreferencesComponent } from './feature-preferences/feature-preferences.component';
@@ -46,7 +48,9 @@ import { AlgorithmsSuggestionComponent } from './algorithms-suggestion/algorithm
     MatChipsModule,
     MatSelectModule,
     MatCheckboxModule,
-    MatIconModule
+    MatIconModule,
+    FormsModule,
+    MatProgressBarModule
   ],
   providers: [],
   bootstrap: [AppComponent]

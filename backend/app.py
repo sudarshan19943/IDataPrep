@@ -10,7 +10,7 @@ import csv
 import json
 
 app = Flask(__name__)
-socketio = SocketIO(app)
+socketio = SocketIO(app) 
 headers_flag  = False
 task_flag = False
 allow_negative_flag = False
@@ -25,13 +25,16 @@ def handleMessage(msg):
 
 @socketio.on('loaddata')
 def handleData(data,json_data,h_flag,t_flag):
+	
 	headers_flag = h_flag
 	task_flag = t_flag
 	read_the_csv(data,headers_flag)
-	dataframe_with_headers = process_data(headers_flag)
-	send_header(dataframe_with_headers)
-	check_column_type(dataframe_with_headers)
-	parseJsonData(json_data,dataframe_with_headers)
+	process_data(headers_flag)
+	print(original_dataframe.head(10))
+	send_header()
+	check_column_type()
+	parseJsonData(json_data)
+	print(original_dataframe.head(400))
 
 
 def read_the_csv(data,flag):
@@ -47,28 +50,31 @@ def get_dic_from_two_lists(keys, values):
 	return { keys[i] : values[i] for i in range(len(keys)) }
 
 def process_data(flag):
+	
+	print("inside process data")
 
 	if(flag):
-		dataframe_with_headers = pd.read_csv('uncleaned.csv',header=0, index_col=False)
-
+		original_dataframe = pd.read_csv('uncleaned.csv',header=0)
+		print("inside headers ", original_dataframe)
 	else :
 		names = []
-		dataframe_without_headers = pd.read_csv('uncleaned.csv', index_col=False)
-		for i in range(len(dataframe_without_headers.columns)):
-			names.append(i)
-		dataframe_with_headers = pd.read_csv('uncleaned.csv', names=names, index_col=False)
-
-	return dataframe_with_headers
+		original_dataframe = pd.read_csv('uncleaned.csv')
+		for i in range(len(original_dataframe.columns)):
+			names.append(str(i))
+		original_dataframe = pd.read_csv('uncleaned.csv', names=names)
 
 
-def send_header(dataframe):
-	headers = dataframe.columns.tolist()
+def send_header():
+	print("inside send header")
+	headers = list(original_dataframe.columns.values)
 	socketio.emit('headers',{'headers':headers})
 
-def check_column_type(dataframe):
+def check_column_type():
 	data_list = []
-	for columnName in dataframe:
-		if(is_numeric_dtype(dataframe[columnName])):
+	featuresReceivedFromBackend = []
+	print(original_dataframe)
+	for columnName in original_dataframe:
+		if(is_numeric_dtype(original_dataframe[columnName])):
 			dict_keys = ['name', 'type']
 			dict_values = [columnName, 'numeric']
 			data = get_dic_from_two_lists(dict_keys, dict_values)
@@ -84,77 +90,90 @@ def check_column_type(dataframe):
 	socketio.emit('featuresReceivedFromBackend', featuresReceivedFromBackend)
 
 
-def parseJsonData(json_data, dataframe):
-	cleaned_df = pd.DataFrame()
-	
+def parseJsonData(json_data):
+	print("inside parse")
 	for json_itr in range(len(json_data)):
 		if(json_data[json_itr]['type']=='numeric'):
 			numeric_json = json_data[json_itr]
-			cleaned_df = pd.concat([cleaned_df,clean_numeric_cols(numeric_json,dataframe)], axis=1)	
+			clean_numeric_cols(numeric_json)
 		else:
 			categorical_json = json_data[json_itr]
-			cleaned_df = pd.concat([cleaned_df,clean_categorical_cols(categorical_json,dataframe)],axis=1)
+			clean_categorical_cols(categorical_json)
 	
-	cleaned_df.dropna(inplace=True)
-	print(cleaned_df.isna().sum())			
 
-def clean_numeric_cols(numeric_json, df):
-	column_name = int(numeric_json['name'])
-	tempNumColDf = df[column_name].to_frame()
-	if(numeric_json['preferences']['zeroAllowed'] == False):
-		tempNumColDf = tempNumColDf.replace({0:np.nan})
+def clean_numeric_cols(numeric_json):
 
-	if(numeric_json['preferences']['negativeAllowed'] == False):
-		tempNumColDf = tempNumColDf.abs()
+
+	print("inside numeric")
+	isZeroAllowed = numeric_json['preferences']['zeroAllowed']
+	print(isZeroAllowed)
+	isNegativeAllowed = numeric_json['preferences']['negativeAllowed']
+	numericColumnName = numeric_json['name']
+	print(original_dataframe)
+
+	if(isZeroAllowed == False):
+		original_dataframe[numericColumnName] = original_dataframe[numericColumnName].replace({0:np.nan})
+		original_dataframe[numericColumnName].dropna()
+
+	if(isNegativeAllowed == False):
+		original_dataframe[numericColumnName] = original_dataframe[numericColumnName].abs()
 	
-	df = tempNumColDf
-	return df
+	
+def clean_categorical_cols(categorical_json):
 
-def clean_categorical_cols(categorical_json,df):
-
-	tempCatColumnDf = df[int(categorical_json['name'])].to_frame()
-	print(type(tempCatColumnDf[1][1]))
+	print("inside cat")
+	
 	modifiedList =[]
 	validCategories = categorical_json['preferences']['categories']
+	catColumnName = categorical_json['name']
+	original_dataframe[catColumnName] = original_dataframe[catColumnName].astype(str)
 
-	for i in range(len(tempCatColumnDf)):
-		if(re.match(r'[A-Za-z0-9]+',str(tempCatColumnDf[1][i]))):
-			tempCatColumnDf[1][i] = tempCatColumnDf[1][i]
+	for i in range(len(original_dataframe[catColumnName])):
+		if(re.match(r'[A-Za-z0-9]+',original_dataframe[catColumnName][i])):
+			original_dataframe[catColumnName][i] = original_dataframe[catColumnName][i]
 		else:
-			tempCatColumnDf[1][i] = '?'
+			original_dataframe[catColumnName][i] = '?'
 
-	tempCatColumnDf.replace({'?':np.nan},inplace=True)
+	original_dataframe[catColumnName].replace({'?':np.nan},inplace=True)
+	original_dataframe[catColumnName].dropna(inplace=True)
+	original_dataframe[catColumnName].reset_index(drop=True, inplace=True)
+		
+	original_dataframe[catColumnName].to_csv('untitled.csv',index=False)
 	
 	for j in range(len(validCategories)):
 
 		modifiedstr=validCategories[j].lower()
 		modifiedstr = re.sub(r'\W+', '', modifiedstr)
 		modifiedList.append(modifiedstr)
-		
-	for i in range(len(tempCatColumnDf)):
 
-		modifiedRowValue = re.sub(r'\W+', '', str(tempCatColumnDf[1][i]))
+	# print(modifiedList)
+	# print(original_dataframe[catColumnName].shape[0])
+
+	for i in range(len(original_dataframe[catColumnName])):
+
+		modifiedRowValue = re.sub(r'\W+', '', original_dataframe[catColumnName][i])
 		modifiedRowValue=modifiedRowValue.lower()
-		tempCatColumnDf.replace({tempCatColumnDf[1][i]:modifiedRowValue},inplace=True)	
+		original_dataframe[catColumnName].replace({original_dataframe[catColumnName][i]:modifiedRowValue},inplace=True)	
 
-	for i in range(len(tempCatColumnDf)):
+	# print(original_dataframe[catColumnName])	
+
+
+	for i in range(len(original_dataframe[catColumnName])):
 
 		for j in range(len(validCategories)):
 
-			if(tempCatColumnDf[1][i] == modifiedList[j]):
-				tempCatColumnDf.replace({tempCatColumnDf[1][i]:validCategories[j]},inplace=True)
+			if(original_dataframe[catColumnName][i] == modifiedList[j]):
+				original_dataframe[catColumnName].replace({original_dataframe[catColumnName][i]:validCategories[j]},inplace=True)
 				break
-			elif((difflib.SequenceMatcher(None,tempCatColumnDf[1][i],modifiedList[j]).ratio()) >= 0.87):
-				tempCatColumnDf.replace({tempCatColumnDf[1][i]:validCategories[j]},inplace=True)
+			elif((difflib.SequenceMatcher(None,original_dataframe[catColumnName][i],modifiedList[j]).ratio()) >= 0.87):
+				original_dataframe[catColumnName].replace({original_dataframe[catColumnName][i]:validCategories[j]},inplace=True)
 				break
 				
-	for i in range(len(tempCatColumnDf)):
-		if(tempCatColumnDf[1][i] not in validCategories):
-			tempCatColumnDf.replace({tempCatColumnDf[1][i]:'?'},inplace=True)
+	for i in range(len(original_dataframe[catColumnName])):
+		if(original_dataframe[catColumnName][i] not in validCategories):
+			original_dataframe[catColumnName].replace({original_dataframe[catColumnName][i]:'?'},inplace=True)
 	
-	tempCatColumnDf.replace({'?':np.nan},inplace=True)
 	
-	return tempCatColumnDf
 
 	
 if __name__ == '__main__':

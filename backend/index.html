@@ -32,7 +32,7 @@ $(document).ready(function() {
 				{name: "0", type: 'numeric', preferences: {zeroAllowed: false, negativeAllowed: false}},
 				{name: "1", type: 'categorical', preferences: {categories: ['Private', 'Self-emp-not-inc', 'Self-emp-inc', 'Federal-gov', 'Local-gov', 'State-gov', 'Without-pay', 'Never-worked']}}
 			];
-		headersFlag = false
+		headersFlag = true
 		taskFlag = true
         parseBytes($("#myFile")[0].files[0],jsonData,headersFlag,taskFlag,socket);
 	});

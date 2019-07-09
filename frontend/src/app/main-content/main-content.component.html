@@ -1,4 +1,4 @@
-<div class="container-fluid main-content">
+<div class="container-fluid main-content pb-5">
   <mat-horizontal-stepper [linear]=true labelPosition="bottom" #stepper>
     <mat-step *ngFor="let step of firstSteps; index as i;" completed=false optional=false>
       <ng-template matStepLabel>{{ firstSteps[i].title }}</ng-template>

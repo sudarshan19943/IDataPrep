@@ -1,4 +1,5 @@
 import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
+import { DataService } from '../data.service';
 
 @Component({
   selector: 'app-csv-file-upload',
@@ -6,28 +7,34 @@ import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
   styleUrls: ['./csv-file-upload.component.scss']
 })
 export class CsvFileUploadComponent implements OnInit {
-
   @Input() forClassification;
   @Output() forClassificationChanged = new EventEmitter<boolean>();
   @Output() completed = new EventEmitter<boolean>();
   hasHeader = true;
   filename = '';
-  constructor() { }
+  file;
 
-  ngOnInit() {
-  }
+  constructor(private dataservice: DataService) {}
+
+  ngOnInit() {}
 
   onFileInput(event: any) {
-    this.filename = 'Selected Filename: ' + event.target.files[0].name;
+    this.file = event.target.files[0];
+    this.filename = 'Selected Filename: ' + this.file.name;
   }
 
-  sendFile() {
-    console.log('Sending File');
-    this.completed.emit(true);
+  onSubmit(e) {
+    if (this.dataservice.connectionReady) {
+      e.preventDefault();
+      const payload = {
+        file: this.file,
+        headerFlag: this.hasHeader,
+        classificationFlag: this.forClassification
+      };
+      console.log('Sending File');
+      this.dataservice.sendFilePayload(payload, this.completed);
+    } else {
+      alert('Valid Socket Connection Required. Please wait...');
+    }
   }
-
-  test(){
-    console.log(this.hasHeader);
-  }
-
 }

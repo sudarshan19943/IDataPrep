@@ -7,6 +7,8 @@ import { Component, OnInit } from '@angular/core';
 })
 export class AlgorithmsSuggestionComponent implements OnInit {
 
+  ready = false;
+
   constructor() { }
 
   ngOnInit() {

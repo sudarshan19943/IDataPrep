@@ -16,7 +16,7 @@ task_flag = False
 allow_negative_flag = False
 allow_zero_flag = False
 features_data = []
-original_dataframe = pd.DataFrame()
+
 
 @socketio.on('message')
 def handleMessage(msg):
@@ -25,17 +25,16 @@ def handleMessage(msg):
 
 @socketio.on('loaddata')
 def handleData(data,json_data,h_flag,t_flag):
-	
+
 	headers_flag = h_flag
 	task_flag = t_flag
 	read_the_csv(data,headers_flag)
-	process_data(headers_flag)
-	print(original_dataframe.head(10))
-	send_header()
-	check_column_type()
-	parseJsonData(json_data)
-	print(original_dataframe.head(400))
-
+	original_dataframe = process_data(headers_flag)
+	send_header(original_dataframe)
+	check_column_type(original_dataframe)
+	original_dataframe = parseJsonData(json_data,original_dataframe)
+	original_dataframe.to_csv('dataset1_processed.csv', header=False,index=False,line_terminator='')
+	
 
 def read_the_csv(data,flag):
 	csvList = data.split('\n')
@@ -50,12 +49,12 @@ def get_dic_from_two_lists(keys, values):
 	return { keys[i] : values[i] for i in range(len(keys)) }
 
 def process_data(flag):
-	
+
 	print("inside process data")
 
 	if(flag):
 		original_dataframe = pd.read_csv('uncleaned.csv',header=0)
-		print("inside headers ", original_dataframe)
+
 	else :
 		names = []
 		original_dataframe = pd.read_csv('uncleaned.csv')
@@ -63,16 +62,18 @@ def process_data(flag):
 			names.append(str(i))
 		original_dataframe = pd.read_csv('uncleaned.csv', names=names)
 
+	return original_dataframe
 
-def send_header():
+
+def send_header(original_dataframe):
 	print("inside send header")
 	headers = list(original_dataframe.columns.values)
 	socketio.emit('headers',{'headers':headers})
 
-def check_column_type():
+def check_column_type(original_dataframe):
 	data_list = []
 	featuresReceivedFromBackend = []
-	print(original_dataframe)
+
 	for columnName in original_dataframe:
 		if(is_numeric_dtype(original_dataframe[columnName])):
 			dict_keys = ['name', 'type']
@@ -90,36 +91,45 @@ def check_column_type():
 	socketio.emit('featuresReceivedFromBackend', featuresReceivedFromBackend)
 
 
-def parseJsonData(json_data):
+def parseJsonData(json_data,original_dataframe):
 	print("inside parse")
-	for json_itr in range(len(json_data)):
+	newHeaders = []
+	for i in range(len(json_data)):
+		newHeaders.append(json_data[i]['name'])
+
+	original_dataframe.columns  = newHeaders
+
+	for json_itr in range(len(json_data)):	
 		if(json_data[json_itr]['type']=='numeric'):
 			numeric_json = json_data[json_itr]
-			clean_numeric_cols(numeric_json)
+			original_dataframe = clean_numeric_cols(numeric_json,original_dataframe)
 		else:
 			categorical_json = json_data[json_itr]
-			clean_categorical_cols(categorical_json)
+			original_dataframe = clean_categorical_cols(categorical_json,original_dataframe)
+	
+	return original_dataframe
 	
 
-def clean_numeric_cols(numeric_json):
-
+def clean_numeric_cols(numeric_json,original_dataframe):
 
 	print("inside numeric")
 	isZeroAllowed = numeric_json['preferences']['zeroAllowed']
-	print(isZeroAllowed)
 	isNegativeAllowed = numeric_json['preferences']['negativeAllowed']
 	numericColumnName = numeric_json['name']
-	print(original_dataframe)
 
 	if(isZeroAllowed == False):
 		original_dataframe[numericColumnName] = original_dataframe[numericColumnName].replace({0:np.nan})
-		original_dataframe[numericColumnName].dropna()
+		original_dataframe[numericColumnName].dropna(inplace = True)
+		original_dataframe.reset_index(drop=True, inplace=True)
 
 	if(isNegativeAllowed == False):
 		original_dataframe[numericColumnName] = original_dataframe[numericColumnName].abs()
+
+
+	return original_dataframe
 	
 	
-def clean_categorical_cols(categorical_json):
+def clean_categorical_cols(categorical_json,original_dataframe):
 
 	print("inside cat")
 	
@@ -172,6 +182,13 @@ def clean_categorical_cols(categorical_json):
 	for i in range(len(original_dataframe[catColumnName])):
 		if(original_dataframe[catColumnName][i] not in validCategories):
 			original_dataframe[catColumnName].replace({original_dataframe[catColumnName][i]:'?'},inplace=True)
+
+
+	original_dataframe[catColumnName].replace({'?':np.nan},inplace=True)
+	original_dataframe.dropna(inplace=True)
+	original_dataframe.reset_index(drop=True, inplace=True)
+
+	return original_dataframe
 	
 	
 

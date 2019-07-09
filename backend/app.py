@@ -17,7 +17,6 @@ allow_negative_flag = False
 allow_zero_flag = False
 features_data = []
 original_dataframe = pd.DataFrame()
-cleaned_dataframe = pd.DataFrame()
 
 @socketio.on('message')
 def handleMessage(msg):
@@ -50,20 +49,20 @@ def get_dic_from_two_lists(keys, values):
 def process_data(flag):
 
 	if(flag):
-		dataframe_with_headers = pd.read_csv('uncleaned.csv',header=0)
+		dataframe_with_headers = pd.read_csv('uncleaned.csv',header=0, index_col=False)
 
 	else :
 		names = []
-		dataframe_without_headers = pd.read_csv('uncleaned.csv')
+		dataframe_without_headers = pd.read_csv('uncleaned.csv', index_col=False)
 		for i in range(len(dataframe_without_headers.columns)):
 			names.append(i)
-		dataframe_with_headers = pd.read_csv('uncleaned.csv', names=names)
+		dataframe_with_headers = pd.read_csv('uncleaned.csv', names=names, index_col=False)
 
 	return dataframe_with_headers
 
 
 def send_header(dataframe):
-	headers = list(dataframe.columns.values)
+	headers = dataframe.columns.tolist()
 	socketio.emit('headers',{'headers':headers})
 
 def check_column_type(dataframe):
@@ -86,20 +85,24 @@ def check_column_type(dataframe):
 
 
 def parseJsonData(json_data, dataframe):
-	for json_itr in len(json_data):
+	cleaned_df = pd.DataFrame()
+	
+	for json_itr in range(len(json_data)):
 		if(json_data[json_itr]['type']=='numeric'):
 			numeric_json = json_data[json_itr]
-			df = clean_numeric_cols(numeric_json,dataframe)
+			cleaned_df = pd.concat([cleaned_df,clean_numeric_cols(numeric_json,dataframe)], axis=1)	
 		else:
 			categorical_json = json_data[json_itr]
-			df = clean_categorical_cols(categorical_json,dataframe)
+			cleaned_df = pd.concat([cleaned_df,clean_categorical_cols(categorical_json,dataframe)],axis=1)
+	
+	cleaned_df.dropna(inplace=True)
+	print(cleaned_df.isna().sum())			
 
 def clean_numeric_cols(numeric_json, df):
-
-	tempNumColDf = df[numeric_json['name']]
+	column_name = int(numeric_json['name'])
+	tempNumColDf = df[column_name].to_frame()
 	if(numeric_json['preferences']['zeroAllowed'] == False):
 		tempNumColDf = tempNumColDf.replace({0:np.nan})
-		tempNumColDf.dropna()
 
 	if(numeric_json['preferences']['negativeAllowed'] == False):
 		tempNumColDf = tempNumColDf.abs()
@@ -109,18 +112,18 @@ def clean_numeric_cols(numeric_json, df):
 
 def clean_categorical_cols(categorical_json,df):
 
-	tempCatColumnDf = df[categorical_json['name']]
+	tempCatColumnDf = df[int(categorical_json['name'])].to_frame()
+	print(type(tempCatColumnDf[1][1]))
 	modifiedList =[]
 	validCategories = categorical_json['preferences']['categories']
 
 	for i in range(len(tempCatColumnDf)):
-		if(re.match(r'[A-Za-z0-9]+',tempCatColumnDf[i])):
-			tempCatColumnDf[i] = tempCatColumnDf[i]
+		if(re.match(r'[A-Za-z0-9]+',str(tempCatColumnDf[1][i]))):
+			tempCatColumnDf[1][i] = tempCatColumnDf[1][i]
 		else:
-			tempCatColumnDf[i] = '?'
+			tempCatColumnDf[1][i] = '?'
 
 	tempCatColumnDf.replace({'?':np.nan},inplace=True)
-	tempCatColumnDf.dropna()
 	
 	for j in range(len(validCategories)):
 
@@ -130,24 +133,28 @@ def clean_categorical_cols(categorical_json,df):
 		
 	for i in range(len(tempCatColumnDf)):
 
-		modifiedRowValue = re.sub(r'\W+', '', tempCatColumnDf[i])
+		modifiedRowValue = re.sub(r'\W+', '', str(tempCatColumnDf[1][i]))
 		modifiedRowValue=modifiedRowValue.lower()
-		tempCatColumnDf.replace({tempCatColumnDf[i]:modifiedRowValue},inplace=True)	
+		tempCatColumnDf.replace({tempCatColumnDf[1][i]:modifiedRowValue},inplace=True)	
 
 	for i in range(len(tempCatColumnDf)):
 
 		for j in range(len(validCategories)):
 
-			if(tempCatColumnDf[i] == modifiedList[j]):
-				tempCatColumnDf.replace({tempCatColumnDf[i]:validCategories[j]},inplace=True)
+			if(tempCatColumnDf[1][i] == modifiedList[j]):
+				tempCatColumnDf.replace({tempCatColumnDf[1][i]:validCategories[j]},inplace=True)
 				break
-			elif((difflib.SequenceMatcher(None,tempCatColumnDf[i],modifiedList[j]).ratio()) >= 0.87):
-				tempCatColumnDf.replace({tempCatColumnDf[i]:validCategories[j]},inplace=True)
+			elif((difflib.SequenceMatcher(None,tempCatColumnDf[1][i],modifiedList[j]).ratio()) >= 0.87):
+				tempCatColumnDf.replace({tempCatColumnDf[1][i]:validCategories[j]},inplace=True)
 				break
 				
 	for i in range(len(tempCatColumnDf)):
-		if(tempCatColumnDf[i] not in validCategories):
-			tempCatColumnDf.replace({tempCatColumnDf[i]:'?'},inplace=True)
+		if(tempCatColumnDf[1][i] not in validCategories):
+			tempCatColumnDf.replace({tempCatColumnDf[1][i]:'?'},inplace=True)
+	
+	tempCatColumnDf.replace({'?':np.nan},inplace=True)
+	
+	return tempCatColumnDf
 
 	
 if __name__ == '__main__':

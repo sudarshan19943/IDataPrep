@@ -18,6 +18,7 @@ export class DataService {
   featuresReady: EventEmitter<any> = new EventEmitter();
   nextCleaningStep: EventEmitter<any> = new EventEmitter();
   cleaningStepComplete: EventEmitter<any> = new EventEmitter();
+  cleanedFileReady: EventEmitter<any> = new EventEmitter();
 
   private socket;
 
@@ -135,6 +136,11 @@ export class DataService {
     this.socket.on('cleaningStepComplete', () => {
       _this.setStatus('Busy', 'Consolidating Cleaned Dataset...');
       _this.cleaningStepComplete.emit();
+    });
+
+    this.socket.on('cleaedDatasetOutput', (data) => {
+      _this.setStatus('Busy', 'Preparing Cleaned Dataset for download...');
+      _this.cleanedFileReady.emit(data);
     });
 
     // this.socket.on('stepVisualisationData', function(step) {

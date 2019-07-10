@@ -16,6 +16,8 @@ task_flag = False
 allow_negative_flag = False
 allow_zero_flag = False
 features_data = []
+d = ''
+
 
 
 @socketio.on('message')
@@ -34,6 +36,7 @@ def handleData(data,json_data,h_flag,t_flag):
 	check_column_type(original_dataframe)
 	original_dataframe = parseJsonData(json_data,original_dataframe)
 	original_dataframe.to_csv('dataset1_processed.csv', header=False,index=False,line_terminator='')
+
 	
 
 def read_the_csv(data,flag):
@@ -93,12 +96,6 @@ def check_column_type(original_dataframe):
 
 def parseJsonData(json_data,original_dataframe):
 	print("inside parse")
-	newHeaders = []
-	for i in range(len(json_data)):
-		newHeaders.append(json_data[i]['name'])
-
-	original_dataframe.columns  = newHeaders
-
 	for json_itr in range(len(json_data)):	
 		if(json_data[json_itr]['type']=='numeric'):
 			numeric_json = json_data[json_itr]
@@ -107,6 +104,7 @@ def parseJsonData(json_data,original_dataframe):
 			categorical_json = json_data[json_itr]
 			original_dataframe = clean_categorical_cols(categorical_json,original_dataframe)
 	
+	df = original_dataframe
 	return original_dataframe
 	
 

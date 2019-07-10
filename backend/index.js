@@ -12,3 +12,8 @@ function parseBytes(file,jsonData,headersFlag,taskFlag,socket){
     reader.readAsText(file);
 }
 
+function parserJson(socket)
+{
+
+  socket.emit('feat');
+}

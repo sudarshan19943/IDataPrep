@@ -29,10 +29,10 @@ $(document).ready(function() {
 	$('#sendbutton').on('click', function() {
 		console.log($("#myFile")[0].files[0].name)
 		jsonData = [
-				{name: '0', type: 'numeric', preferences: {zeroAllowed: false, negativeAllowed: false}},
-				{name: '1', type: 'categorical', preferences: {categories: ['Private', 'Self-emp-not-inc',
+				{name: 'age', type: 'numeric', preferences: {zeroAllowed: false, negativeAllowed: false}},
+				{name: 'workclass', type: 'categorical', preferences: {categories: ['Private', 'Self-emp-not-inc',
 				 'Self-emp-inc', 'Federal-gov', 'Local-gov', 'State-gov', 'Without-pay', 'Never-worked']}},
-				 {name:'2',type:'categorical',preferences:{categories:['Tech-support', 'Craft-repair', 'Other-service', 'Sales', 'Exec-managerial', 'Prof-specialty', 'Handlers-cleaners',
+				 {name:'occupation',type:'categorical',preferences:{categories:['Tech-support', 'Craft-repair', 'Other-service', 'Sales', 'Exec-managerial', 'Prof-specialty', 'Handlers-cleaners',
 'Machine-op-inspct', 'Adm-clerical', 'Farming-fishing', 'Transport-moving', 'Priv-house-serv', 'Protective-serv',
 'Armed-Forces']}}
 			
@@ -40,6 +40,12 @@ $(document).ready(function() {
 		headersFlag = true
 		taskFlag = true
         parseBytes($("#myFile")[0].files[0],jsonData,headersFlag,taskFlag,socket);
+	});
+
+	$('#emitbutton').on('click',function()
+	{
+		parserJson(socket)
+
 	});
 
 
@@ -53,6 +59,6 @@ $(document).ready(function() {
 <div id = "featureTypeDiv"></div>
 <input type="file" id="myFile">
 <button id="sendbutton">Send</button>
-
+<button id="emitbutton">Emit</button>
 </body>
 </html>

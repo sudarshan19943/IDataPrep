@@ -8,6 +8,7 @@ import re
 import difflib 
 import csv
 import json
+import pickle
 
 app = Flask(__name__)
 socketio = SocketIO(app) 
@@ -16,9 +17,18 @@ task_flag = False
 allow_negative_flag = False
 allow_zero_flag = False
 features_data = []
-d = ''
 
+def read_pkl():
+	df = pd.DataFrame()
+	with open("original_df.pkl", "rb") as f:
+		df = pickle.load(f)
+	f.close()
+	return df
 
+def write_pkl(df):
+	with open("original_df.pkl", "wb") as f:
+		pickle.dump(df,f)
+	f.close()
 
 @socketio.on('message')
 def handleMessage(msg):
@@ -31,12 +41,12 @@ def handleData(data,json_data,h_flag,t_flag):
 	headers_flag = h_flag
 	task_flag = t_flag
 	read_the_csv(data,headers_flag)
-	original_dataframe = process_data(headers_flag)
-	send_header(original_dataframe)
-	check_column_type(original_dataframe)
-	original_dataframe = parseJsonData(json_data,original_dataframe)
+	process_data(headers_flag)
+	send_header()
+	check_column_type()
+	parseJsonData(json_data)
+	original_dataframe = read_pkl()
 	original_dataframe.to_csv('dataset1_processed.csv', header=False,index=False,line_terminator='')
-
 	
 
 def read_the_csv(data,flag):
@@ -64,17 +74,20 @@ def process_data(flag):
 		for i in range(len(original_dataframe.columns)):
 			names.append(str(i))
 		original_dataframe = pd.read_csv('uncleaned.csv', names=names)
+		
 
-	return original_dataframe
+	write_pkl(original_dataframe)
 
 def send_header():
+	original_dataframe = read_pkl()
 	print("inside send header")
 	headers = list(original_dataframe.columns.values)
 	socketio.emit('headers',{'headers':headers})
 
-def check_column_type(original_dataframe):
+def check_column_type():
 	data_list = []
 	featuresReceivedFromBackend = []
+	original_dataframe = read_pkl()
 
 	for columnName in original_dataframe:
 		if(is_numeric_dtype(original_dataframe[columnName])):
@@ -95,21 +108,27 @@ def check_column_type(original_dataframe):
 
 def parseJsonData(json_data):
 	print("inside parse")
+	newHeaders = []
+	# original_dataframe = read_pkl()
+	# for i in range(len(json_data)):
+	# 	newHeaders.append(json_data[i]['name'])
+
+	# original_dataframe.columns  = newHeaders
+
 	for json_itr in range(len(json_data)):	
 		if(json_data[json_itr]['type']=='numeric'):
 			numeric_json = json_data[json_itr]
-			original_dataframe = clean_numeric_cols(numeric_json,original_dataframe)
+			clean_numeric_cols(numeric_json)
 		else:
 			categorical_json = json_data[json_itr]
-			original_dataframe = clean_categorical_cols(categorical_json,original_dataframe)
+			clean_categorical_cols(categorical_json)
 	
-	df = original_dataframe
-	return original_dataframe
+	# write_pkl(original_dataframe)
 	
 
 def clean_numeric_cols(numeric_json):
 
-
+	original_dataframe = read_pkl()
 	print("inside numeric")
 	isZeroAllowed = numeric_json['preferences']['zeroAllowed']
 	isNegativeAllowed = numeric_json['preferences']['negativeAllowed']
@@ -124,11 +143,11 @@ def clean_numeric_cols(numeric_json):
 		original_dataframe[numericColumnName] = original_dataframe[numericColumnName].abs()
 
 
-	return original_dataframe
+	write_pkl(original_dataframe)
 	
 	
-def clean_categorical_cols(categorical_json,original_dataframe):
-
+def clean_categorical_cols(categorical_json):
+	original_dataframe = read_pkl()
 	print("inside cat")
 	
 	modifiedList =[]
@@ -146,7 +165,6 @@ def clean_categorical_cols(categorical_json,original_dataframe):
 	original_dataframe[catColumnName].dropna(inplace=True)
 	original_dataframe[catColumnName].reset_index(drop=True, inplace=True)
 		
-	original_dataframe[catColumnName].to_csv('untitled.csv',index=False)
 	
 	for j in range(len(validCategories)):
 
@@ -186,7 +204,7 @@ def clean_categorical_cols(categorical_json,original_dataframe):
 	original_dataframe.dropna(inplace=True)
 	original_dataframe.reset_index(drop=True, inplace=True)
 
-	return original_dataframe
+	write_pkl(original_dataframe)
 	
 	
 

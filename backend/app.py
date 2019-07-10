@@ -1,4 +1,5 @@
-from flask import Flask 
+from flask import Flask, session
+from flask_session import Session
 from flask_socketio import SocketIO, send
 from pandas.api.types import is_numeric_dtype
 import pandas as pd
@@ -11,6 +12,7 @@ import json
 import pickle
 
 app = Flask(__name__)
+Session(app)
 socketio = SocketIO(app) 
 headers_flag  = False
 task_flag = False

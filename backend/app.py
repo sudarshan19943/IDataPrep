@@ -36,7 +36,7 @@ def handleMessage(msg):
 	send(msg , broadcast=True)
 
 @socketio.on('loaddata')
-def handleData(data,json_data,h_flag,t_flag):
+def handleData(data,h_flag,t_flag):
 
 	headers_flag = h_flag
 	task_flag = t_flag
@@ -44,10 +44,17 @@ def handleData(data,json_data,h_flag,t_flag):
 	process_data(headers_flag)
 	send_header()
 	check_column_type()
-	parseJsonData(json_data)
 	original_dataframe = read_pkl()
 	original_dataframe.to_csv('dataset1_processed.csv', header=False,index=False,line_terminator='')
 	
+@socketio.on('loadFeaturesPayload')
+def parseDataOnPayload(json_data):
+	socketio.emit('cleaningStep')
+	cleanData(json_data)
+	cleaned_dataframe  = read_pkl()
+	cleaned_json_object = cleaned_dataframe.to_json(orient='records')
+	socketio.emit('cleaningStepComplete')
+	socketio.emit('cleanedDatasetOutput',cleaned_json_object)
 
 def read_the_csv(data,flag):
 	csvList = data.split('\n')
@@ -75,7 +82,6 @@ def process_data(flag):
 			names.append(str(i))
 		original_dataframe = pd.read_csv('uncleaned.csv', names=names)
 		
-
 	write_pkl(original_dataframe)
 
 def send_header():
@@ -106,14 +112,16 @@ def check_column_type():
 	socketio.emit('featuresReceivedFromBackend', featuresReceivedFromBackend)
 
 
-def parseJsonData(json_data):
+def cleanData(json_data):
 	print("inside parse")
 	newHeaders = []
-	# original_dataframe = read_pkl()
-	# for i in range(len(json_data)):
-	# 	newHeaders.append(json_data[i]['name'])
+	
+	original_dataframe = read_pkl()
 
-	# original_dataframe.columns  = newHeaders
+	for i in range(len(json_data)):
+		newHeaders.append(json_data[i]['name'])
+
+	original_dataframe.columns  = newHeaders
 
 	for json_itr in range(len(json_data)):	
 		if(json_data[json_itr]['type']=='numeric'):
@@ -123,7 +131,7 @@ def parseJsonData(json_data):
 			categorical_json = json_data[json_itr]
 			clean_categorical_cols(categorical_json)
 	
-	# write_pkl(original_dataframe)
+	write_pkl(original_dataframe)
 	
 
 def clean_numeric_cols(numeric_json):
@@ -142,14 +150,12 @@ def clean_numeric_cols(numeric_json):
 	if(isNegativeAllowed == False):
 		original_dataframe[numericColumnName] = original_dataframe[numericColumnName].abs()
 
-
 	write_pkl(original_dataframe)
 	
 	
 def clean_categorical_cols(categorical_json):
 	original_dataframe = read_pkl()
 	print("inside cat")
-	
 	modifiedList =[]
 	validCategories = categorical_json['preferences']['categories']
 	catColumnName = categorical_json['name']
@@ -165,24 +171,17 @@ def clean_categorical_cols(categorical_json):
 	original_dataframe[catColumnName].dropna(inplace=True)
 	original_dataframe[catColumnName].reset_index(drop=True, inplace=True)
 		
-	
 	for j in range(len(validCategories)):
 
 		modifiedstr=validCategories[j].lower()
 		modifiedstr = re.sub(r'\W+', '', modifiedstr)
 		modifiedList.append(modifiedstr)
 
-	# print(modifiedList)
-	# print(original_dataframe[catColumnName].shape[0])
-
 	for i in range(len(original_dataframe[catColumnName])):
 
 		modifiedRowValue = re.sub(r'\W+', '', original_dataframe[catColumnName][i])
 		modifiedRowValue=modifiedRowValue.lower()
 		original_dataframe[catColumnName].replace({original_dataframe[catColumnName][i]:modifiedRowValue},inplace=True)	
-
-	# print(original_dataframe[catColumnName])	
-
 
 	for i in range(len(original_dataframe[catColumnName])):
 
@@ -203,11 +202,8 @@ def clean_categorical_cols(categorical_json):
 	original_dataframe[catColumnName].replace({'?':np.nan},inplace=True)
 	original_dataframe.dropna(inplace=True)
 	original_dataframe.reset_index(drop=True, inplace=True)
-
 	write_pkl(original_dataframe)
 	
-	
 
-	
 if __name__ == '__main__':
     socketio.run(app)

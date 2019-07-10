@@ -1,4 +1,5 @@
-from flask import Flask 
+from flask import Flask, session
+from flask_session import Session
 from flask_socketio import SocketIO, send
 from pandas.api.types import is_numeric_dtype
 import pandas as pd
@@ -11,6 +12,7 @@ import json
 import pickle
 
 app = Flask(__name__)
+Session(app)
 socketio = SocketIO(app) 
 headers_flag  = False
 task_flag = False
@@ -49,11 +51,11 @@ def handleData(data,h_flag,t_flag):
 	
 @socketio.on('loadFeaturesPayload')
 def parseDataOnPayload(json_data):
-	socketio.emit('cleaningStep')
+	socketio.emit('cleaningStep', 'Cleaning')
 	cleanData(json_data)
 	cleaned_dataframe  = read_pkl()
 	cleaned_json_object = cleaned_dataframe.to_json(orient='records')
-	socketio.emit('cleaningStepComplete')
+	socketio.emit('cleaningStepComplete', 'Cleaning complete')
 	socketio.emit('cleanedDatasetOutput',cleaned_json_object)
 
 def read_the_csv(data,flag):

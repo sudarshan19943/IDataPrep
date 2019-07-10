@@ -67,8 +67,7 @@ def process_data(flag):
 
 	return original_dataframe
 
-
-def send_header(original_dataframe):
+def send_header():
 	print("inside send header")
 	headers = list(original_dataframe.columns.values)
 	socketio.emit('headers',{'headers':headers})
@@ -94,7 +93,7 @@ def check_column_type(original_dataframe):
 	socketio.emit('featuresReceivedFromBackend', featuresReceivedFromBackend)
 
 
-def parseJsonData(json_data,original_dataframe):
+def parseJsonData(json_data):
 	print("inside parse")
 	for json_itr in range(len(json_data)):	
 		if(json_data[json_itr]['type']=='numeric'):
@@ -108,7 +107,8 @@ def parseJsonData(json_data,original_dataframe):
 	return original_dataframe
 	
 
-def clean_numeric_cols(numeric_json,original_dataframe):
+def clean_numeric_cols(numeric_json):
+
 
 	print("inside numeric")
 	isZeroAllowed = numeric_json['preferences']['zeroAllowed']

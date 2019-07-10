@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { DataService } from '../data.service';
 
 @Component({
   selector: 'app-status-bar',
@@ -7,8 +8,7 @@ import { Component, OnInit } from '@angular/core';
 })
 export class StatusBarComponent implements OnInit {
 
-  status = 'Ready';
-  constructor() { }
+  constructor(public dataservice: DataService) { }
 
   ngOnInit() {
   }

@@ -55,7 +55,7 @@ def parseDataOnPayload(json_data):
 	cleanData(json_data)
 	cleaned_dataframe  = read_pkl()
 	print(cleaned_dataframe)
-	cleaned_dataframe.to_csv('dataset1_processed.csv', header=False,index=False,line_terminator='')
+	cleaned_dataframe.to_csv('dataset1_processed.csv',index=False,line_terminator='')
 	
 	with open("dataset1_processed.csv", "rb") as csvfile:
 		base64_string = base64.b64encode(csvfile.read())

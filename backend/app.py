@@ -196,7 +196,7 @@ def clean_numeric_cols(numeric_json):
 def clean_categorical_cols(categorical_json):
 	original_dataframe = read_pkl()
 	dirtyCount = 0
-	print("inside cat")
+	
 	modifiedList =[]
 	validCategories = categorical_json['preferences']['categories']
 	catColumnName = categorical_json['name']

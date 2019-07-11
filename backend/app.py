@@ -14,7 +14,7 @@ import base64
 
 
 app = Flask(__name__)
-socketio = SocketIO(app ,ping_interval=5000, ping_timeout=55000,async_mode='threading') 
+socketio = SocketIO(app ,ping_interval=500, ping_timeout=55000,async_mode='threading') 
 headers_flag  = False
 task_flag = False
 allow_negative_flag = False
@@ -57,7 +57,7 @@ def parseDataOnPayload(json_data):
 	print(cleaned_dataframe)
 	cleaned_dataframe.to_csv('dataset1_processed.csv', header=False,index=False,line_terminator='')
 	
-	with open("dataset1_dirty.csv", "rb") as csvfile:
+	with open("dataset1_processed.csv", "rb") as csvfile:
 		base64_string = base64.b64encode(csvfile.read())
 	csvfile.close()
 
@@ -160,7 +160,6 @@ def clean_numeric_cols(numeric_json):
 
 	if(isNegativeAllowed == False):
 		# original_dataframe[numericColumnName] = original_dataframe[numericColumnName].abs()
-
 		for i in range(len(original_dataframe[numericColumnName])):
 			if(original_dataframe[numericColumnName].lt(0)[i] == True):
 				original_dataframe[numericColumnName].replace({original_dataframe[numericColumnName][i]:np.nan},inplace=True)
@@ -169,7 +168,6 @@ def clean_numeric_cols(numeric_json):
 		original_dataframe.reset_index(drop=True,inplace=True)
 
 	write_pkl(original_dataframe)
-	
 	
 def clean_categorical_cols(categorical_json):
 	original_dataframe = read_pkl()

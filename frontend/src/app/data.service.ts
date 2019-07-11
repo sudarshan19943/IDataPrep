@@ -17,6 +17,7 @@ export class DataService {
   fileLoaded: EventEmitter<any> = new EventEmitter();
   featuresReady: EventEmitter<any> = new EventEmitter();
   nextCleaningStep: EventEmitter<any> = new EventEmitter();
+  cleaningStepDataUpdate: EventEmitter<any> = new EventEmitter();
   cleaningStepComplete: EventEmitter<any> = new EventEmitter();
   cleanedFileReady: EventEmitter<any> = new EventEmitter();
 
@@ -131,6 +132,12 @@ export class DataService {
       _this.socket.send('Received Cleaning Step');
       _this.setStatus('Busy', step + ' in progress...');
       _this.nextCleaningStep.emit(step + '...');
+    });
+
+
+    this.socket.on('cleaningStepDataUpdate', data => {
+      _this.socket.send('Received Cleaning Step Data Update');
+      _this.cleaningStepDataUpdate.emit(data);
     });
 
     this.socket.on('cleaningStepComplete', () => {

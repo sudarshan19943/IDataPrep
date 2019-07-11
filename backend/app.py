@@ -1,5 +1,5 @@
 from flask import Flask, session
-from flask_session import Session
+# from flask_session import Session
 from flask_socketio import SocketIO, send
 from pandas.api.types import is_numeric_dtype
 import pandas as pd
@@ -10,15 +10,17 @@ import difflib
 import csv
 import json
 import pickle
+import base64
+
 
 app = Flask(__name__)
-Session(app)
-socketio = SocketIO(app) 
+socketio = SocketIO(app ,ping_interval=5000, ping_timeout=55000,async_mode='threading') 
 headers_flag  = False
 task_flag = False
 allow_negative_flag = False
 allow_zero_flag = False
 features_data = []
+base64_string = ''
 
 def read_pkl():
 	df = pd.DataFrame()
@@ -46,18 +48,23 @@ def handleData(data,h_flag,t_flag):
 	process_data(headers_flag)
 	send_header()
 	check_column_type()
-	original_dataframe = read_pkl()
-	original_dataframe.to_csv('dataset1_processed.csv', header=False,index=False,line_terminator='')
+	
 	
 @socketio.on('loadFeaturesPayload')
 def parseDataOnPayload(json_data):
-	socketio.emit('cleaningStep', 'Cleaning')
 	cleanData(json_data)
 	cleaned_dataframe  = read_pkl()
-	cleaned_json_object = cleaned_dataframe.to_json(orient='records')
-	socketio.emit('cleaningStepComplete', 'Cleaning complete')
-	socketio.emit('cleanedDatasetOutput',cleaned_json_object)
+	print(cleaned_dataframe)
+	cleaned_dataframe.to_csv('dataset1_processed.csv', header=False,index=False,line_terminator='')
+	
+	with open("dataset1_dirty.csv", "rb") as csvfile:
+		base64_string = base64.b64encode(csvfile.read())
+	csvfile.close()
 
+	socketio.emit('cleaningStepComplete', 'Cleaning complete')
+	socketio.emit('cleanedDatasetOutput',base64_string)
+
+	
 def read_the_csv(data,flag):
 	csvList = data.split('\n')
 	with open('uncleaned.csv', 'w', newline='') as myfile:
@@ -128,9 +135,11 @@ def cleanData(json_data):
 	for json_itr in range(len(json_data)):	
 		if(json_data[json_itr]['type']=='numeric'):
 			numeric_json = json_data[json_itr]
+			socketio.emit('cleaningStep', 'Cleaning numeric column ' + numeric_json['name'])
 			clean_numeric_cols(numeric_json)
 		else:
 			categorical_json = json_data[json_itr]
+			socketio.emit('cleaningStep', 'Cleaning categorical column ' + categorical_json['name'])
 			clean_categorical_cols(categorical_json)
 	
 	write_pkl(original_dataframe)
@@ -150,7 +159,14 @@ def clean_numeric_cols(numeric_json):
 		original_dataframe.reset_index(drop=True, inplace=True)
 
 	if(isNegativeAllowed == False):
-		original_dataframe[numericColumnName] = original_dataframe[numericColumnName].abs()
+		# original_dataframe[numericColumnName] = original_dataframe[numericColumnName].abs()
+
+		for i in range(len(original_dataframe[numericColumnName])):
+			if(original_dataframe[numericColumnName].lt(0)[i] == True):
+				original_dataframe[numericColumnName].replace({original_dataframe[numericColumnName][i]:np.nan},inplace=True)
+        
+		original_dataframe.dropna(inplace=True)
+		original_dataframe.reset_index(drop=True,inplace=True)
 
 	write_pkl(original_dataframe)
 	
@@ -161,7 +177,7 @@ def clean_categorical_cols(categorical_json):
 	modifiedList =[]
 	validCategories = categorical_json['preferences']['categories']
 	catColumnName = categorical_json['name']
-	original_dataframe[catColumnName] = original_dataframe[catColumnName].astype(str)
+	original_dataframe[catColumnName] = original_dataframe[catColumnName].astype(str )
 
 	for i in range(len(original_dataframe[catColumnName])):
 		if(re.match(r'[A-Za-z0-9]+',original_dataframe[catColumnName][i])):
@@ -170,8 +186,8 @@ def clean_categorical_cols(categorical_json):
 			original_dataframe[catColumnName][i] = '?'
 
 	original_dataframe[catColumnName].replace({'?':np.nan},inplace=True)
-	original_dataframe[catColumnName].dropna(inplace=True)
-	original_dataframe[catColumnName].reset_index(drop=True, inplace=True)
+	original_dataframe.dropna(inplace=True)
+	original_dataframe.reset_index(drop=True, inplace=True)
 		
 	for j in range(len(validCategories)):
 
@@ -208,4 +224,4 @@ def clean_categorical_cols(categorical_json):
 	
 
 if __name__ == '__main__':
-    socketio.run(app)
+    socketio.run(app) 

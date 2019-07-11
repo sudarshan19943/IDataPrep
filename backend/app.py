@@ -12,7 +12,6 @@ import json
 import pickle
 import base64
 
-
 app = Flask(__name__)
 socketio = SocketIO(app ,ping_interval=500, ping_timeout=55000,async_mode='threading') 
 headers_flag  = False
@@ -79,7 +78,6 @@ def get_dic_from_two_lists(keys, values):
 
 def process_data(flag):
 
-	print("inside process data")
 
 	if(flag):
 		original_dataframe = pd.read_csv('uncleaned.csv',header=0)
@@ -122,7 +120,6 @@ def check_column_type():
 
 
 def cleanData(json_data):
-	print("inside parse")
 	newHeaders = []
 	
 	original_dataframe = read_pkl()
@@ -147,41 +144,88 @@ def cleanData(json_data):
 
 def clean_numeric_cols(numeric_json):
 
+	countOfNumericNan = 0
+	countOfNegatives = 0
+	countOfZeros = 0
+	validCounts = 0
+	invalidCounts = 0
+	totalCounts = 0
 	original_dataframe = read_pkl()
-	print("inside numeric")
 	isZeroAllowed = numeric_json['preferences']['zeroAllowed']
 	isNegativeAllowed = numeric_json['preferences']['negativeAllowed']
 	numericColumnName = numeric_json['name']
 
-	if(isZeroAllowed == False):
-		original_dataframe[numericColumnName] = original_dataframe[numericColumnName].replace({0:np.nan})
-		original_dataframe[numericColumnName].dropna(inplace = True)
-		original_dataframe.reset_index(drop=True, inplace=True)
+	totalCounts = original_dataframe[numericColumnName].shape[0]
 
-	if(isNegativeAllowed == False):
-		# original_dataframe[numericColumnName] = original_dataframe[numericColumnName].abs()
+	if(isNegativeAllowed == False and isZeroAllowed==True): 
 		for i in range(len(original_dataframe[numericColumnName])):
 			if(original_dataframe[numericColumnName].lt(0)[i] == True):
+				countOfNegatives = countOfNegatives + 1
 				original_dataframe[numericColumnName].replace({original_dataframe[numericColumnName][i]:np.nan},inplace=True)
-        
+		validCounts = totalCounts - (countOfNumericNan + countOfNegatives)
 		original_dataframe.dropna(inplace=True)
 		original_dataframe.reset_index(drop=True,inplace=True)
+		print(numericColumnName,validCounts,countOfNumericNan,countOfNegatives)
+		socketio.emit('cleaningStepDataUpdate', {'name': numericColumnName, 'type': 'numeric', 'validCount' : int(validCounts), 'dirtyStats' : {'nan': int(countOfNumericNan), 'neg': int(countOfNegatives)}})
+	
 
+	if(isZeroAllowed == False and isNegativeAllowed == True):
+
+		for i in range(len(original_dataframe[numericColumnName])):
+			if(original_dataframe[numericColumnName].eq(0)[i] == True):
+				countOfZeros = countOfZeros + 1
+
+		original_dataframe[numericColumnName] = original_dataframe[numericColumnName].replace({0:np.nan},inplace=True)
+		countOfNumericNan = original_dataframe[numericColumnName].isna().sum()
+		original_dataframe.dropna(inplace = True)
+		original_dataframe.reset_index(drop=True, inplace=True)
+		validCounts = totalCounts - (countOfNumericNan + countOfZeros)
+		print(numericColumnName,validCounts,countOfNumericNan,countOfNegatives)
+		socketio.emit('cleaningStepDataUpdate', {'name': numericColumnName, 'type': 'numeric', 'validCount' : int(validCounts), 'dirtyStats' : {'nan': int(countOfNumericNan), 'zero': int(countOfZeros)}})
+
+	if(isZeroAllowed == False and isNegativeAllowed == False):
+
+		for i in range(len(original_dataframe[numericColumnName])):
+			if(original_dataframe[numericColumnName].eq(0)[i] == True):
+				countOfZeros = countOfZeros + 1
+			if(original_dataframe[numericColumnName].lt(0)[i] == True):
+				original_dataframe[numericColumnName].replace({original_dataframe[numericColumnName][i]:np.nan}, inplace=True)
+				countOfNegatives = countOfNegatives + 1
+				
+		original_dataframe[numericColumnName] = original_dataframe[numericColumnName].replace({0:np.nan}, inplace=True)
+		countOfNumericNan = original_dataframe[numericColumnName].isna().sum()
+		original_dataframe.dropna(inplace = True)
+		original_dataframe.reset_index(drop=True, inplace=True)
+		validCounts = totalCounts - (countOfNumericNan + countOfNegatives + countOfZeros)
+		print(numericColumnName,validCounts,countOfNumericNan,countOfNegatives)
+		socketio.emit('cleaningStepDataUpdate', {'name': numericColumnName, 'type': 'numeric', 'validCount' : int(validCounts), 'dirtyStats' : {'nan': int(countOfNumericNan), 'zero': int(countOfZeros), 'neg': int(countOfNegatives)}})
+
+	if(isZeroAllowed == True and isNegativeAllowed == True):
+		countOfNumericNan = original_dataframe[numericColumnName].isna().sum()
+		validCounts = totalCounts - (countOfNumericNan)
+		print(numericColumnName,validCounts,countOfNumericNan,countOfNegatives)
+		socketio.emit('cleaningStepDataUpdate', {'name': numericColumnName, 'type': 'numeric', 'validCount' : int(validCounts), 'dirtyStats' : {'nan': int(countOfNumericNan)}})
+    
 	write_pkl(original_dataframe)
 	
+
 def clean_categorical_cols(categorical_json):
 	original_dataframe = read_pkl()
-	print("inside cat")
+	dirtyCount = 0
+	validCount = 0
+	totalCount = 0
 	modifiedList =[]
 	validCategories = categorical_json['preferences']['categories']
 	catColumnName = categorical_json['name']
-	original_dataframe[catColumnName] = original_dataframe[catColumnName].astype(str )
+	totalCounts = original_dataframe[catColumnName].shape[0]
+	original_dataframe[catColumnName] = original_dataframe[catColumnName].astype(str)
 
 	for i in range(len(original_dataframe[catColumnName])):
 		if(re.match(r'[A-Za-z0-9]+',original_dataframe[catColumnName][i])):
 			original_dataframe[catColumnName][i] = original_dataframe[catColumnName][i]
 		else:
 			original_dataframe[catColumnName][i] = '?'
+			dirtyCount = dirtyCount  + 1
 
 	original_dataframe[catColumnName].replace({'?':np.nan},inplace=True)
 	original_dataframe.dropna(inplace=True)
@@ -213,6 +257,7 @@ def clean_categorical_cols(categorical_json):
 	for i in range(len(original_dataframe[catColumnName])):
 		if(original_dataframe[catColumnName][i] not in validCategories):
 			original_dataframe[catColumnName].replace({original_dataframe[catColumnName][i]:'?'},inplace=True)
+			dirtyCount = dirtyCount + 1
 
 
 	original_dataframe[catColumnName].replace({'?':np.nan},inplace=True)
@@ -220,6 +265,15 @@ def clean_categorical_cols(categorical_json):
 	original_dataframe.reset_index(drop=True, inplace=True)
 	write_pkl(original_dataframe)
 	
+	validCount = totalCount - dirtyCount
+	dict1={}
+	values = original_dataframe[catColumnName].value_counts().index.tolist()
+	for i in range(len(values)):
+		dict1[values[i]]=original_dataframe[catColumnName].value_counts()[i]
+    
+	print({'name': catColumnName, 'type': 'categorical', 'validCount' : validCount, 'categoryStats' : dict1})
+	socketio.emit('cleaningStepDataUpdate',	{'name': catColumnName, 'type': 'categorical', 'validCount' : validCount, 'categoryStats' : dict1})
+
 
 if __name__ == '__main__':
     socketio.run(app) 

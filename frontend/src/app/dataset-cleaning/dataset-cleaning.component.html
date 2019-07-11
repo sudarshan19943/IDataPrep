@@ -1,9 +1,9 @@
 <div class="container dataset-cleaning mt-4">
     <div class="text-center">
-        <h4 class="px-5 py-3 mb-5 d-inline-block rounded-pill section-heading">Cleaning Dataset...</h4>
+        <h4 class="px-5 py-3 mb-5 d-inline-block rounded-pill section-heading">Cleaning Dataset</h4>
         <mat-progress-bar [ngClass]="{'d-none' : done}" class="mb-5" mode="query"></mat-progress-bar>
     </div>
     <ul *ngFor="let step of cleaningSteps; index as i;" class="list-group px-5">
-      <li class="list-group-item alert-info pl-3 py-1 mb-2 rounded-pill">{{ step | titlecase }}...</li>
+      <li class="list-group-item alert-info pl-3 py-1 mb-2 rounded-pill">{{ step | titlecase }}</li>
     </ul>
 </div>

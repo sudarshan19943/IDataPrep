@@ -79,7 +79,6 @@ def get_dic_from_two_lists(keys, values):
 
 def process_data(flag):
 
-	print("inside process data")
 
 	if(flag):
 		original_dataframe = pd.read_csv('uncleaned.csv',header=0)
@@ -122,7 +121,6 @@ def check_column_type():
 
 
 def cleanData(json_data):
-	print("inside parse")
 	newHeaders = []
 	
 	original_dataframe = read_pkl()
@@ -147,30 +145,57 @@ def cleanData(json_data):
 
 def clean_numeric_cols(numeric_json):
 
+	countOfNumericNan = 0
+	countOfNegatives = 0
+	countOfZeros = 0
+	validCounts = 0
+	invalidCounts = 0
+	totalCounts = 0
 	original_dataframe = read_pkl()
-	print("inside numeric")
 	isZeroAllowed = numeric_json['preferences']['zeroAllowed']
 	isNegativeAllowed = numeric_json['preferences']['negativeAllowed']
 	numericColumnName = numeric_json['name']
 
-	if(isZeroAllowed == False):
-		original_dataframe[numericColumnName] = original_dataframe[numericColumnName].replace({0:np.nan})
-		original_dataframe[numericColumnName].dropna(inplace = True)
-		original_dataframe.reset_index(drop=True, inplace=True)
+	countOfNumericNan = original_dataframe[numericColumnName].isna().sum()
+	totalCounts = original_dataframe[numericColumnName].shape[0]
 
-	if(isNegativeAllowed == False):
+	if(isNegativeAllowed == False): 
 		# original_dataframe[numericColumnName] = original_dataframe[numericColumnName].abs()
 		for i in range(len(original_dataframe[numericColumnName])):
 			if(original_dataframe[numericColumnName].lt(0)[i] == True):
+				countOfNegatives = countOfNegatives + 1
 				original_dataframe[numericColumnName].replace({original_dataframe[numericColumnName][i]:np.nan},inplace=True)
-        
+
 		original_dataframe.dropna(inplace=True)
 		original_dataframe.reset_index(drop=True,inplace=True)
+	
+		
 
+	if(isZeroAllowed == False):
+
+		for i in range(len(original_dataframe[numericColumnName])):
+			if(original_dataframe[numericColumnName].eq(0)[i] == True):
+				countOfZeros = countOfZeros + 1
+
+		original_dataframe[numericColumnName] = original_dataframe[numericColumnName].replace({0:np.nan})
+		countOfNumericNan = original_dataframe[numericColumnName].isna().sum()
+		original_dataframe.dropna(inplace = True)
+		original_dataframe.reset_index(drop=True, inplace=True)
+		validCounts = totalCounts - (countOfNumericNan + countOfNegatives + countOfZeros)
+		socketio.emit('cleaningStepDataUpdate')
+
+	else :
+		validCounts = totalCounts - (countOfNumericNan + countOfNegatives)
+		socketio.emit('cleaningStepDataUpdate')
+
+	
+    
 	write_pkl(original_dataframe)
 	
+
 def clean_categorical_cols(categorical_json):
 	original_dataframe = read_pkl()
+	dirtyCount = 0
 	print("inside cat")
 	modifiedList =[]
 	validCategories = categorical_json['preferences']['categories']
@@ -182,6 +207,7 @@ def clean_categorical_cols(categorical_json):
 			original_dataframe[catColumnName][i] = original_dataframe[catColumnName][i]
 		else:
 			original_dataframe[catColumnName][i] = '?'
+			dirtyCount = dirtyCount  + 1
 
 	original_dataframe[catColumnName].replace({'?':np.nan},inplace=True)
 	original_dataframe.dropna(inplace=True)
@@ -213,6 +239,7 @@ def clean_categorical_cols(categorical_json):
 	for i in range(len(original_dataframe[catColumnName])):
 		if(original_dataframe[catColumnName][i] not in validCategories):
 			original_dataframe[catColumnName].replace({original_dataframe[catColumnName][i]:'?'},inplace=True)
+			dirtyCount = dirtyCount + 1
 
 
 	original_dataframe[catColumnName].replace({'?':np.nan},inplace=True)

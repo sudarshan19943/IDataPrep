@@ -28,7 +28,12 @@ export class CsvFileDownloadComponent implements OnInit {
   }
 
   ab2str(buf) {
-    return String.fromCharCode.apply(null, new Uint8Array(buf));
+    let newBase64String = '';
+    const buffer = new Uint8Array(buf);
+    buffer.forEach(element => {
+      newBase64String += String.fromCharCode(element);
+    });
+    return newBase64String;
   }
 
   dataURIToBlob(dataURI) {

@@ -221,26 +221,14 @@ def check_valid_categories(col, validCategories):
 		col = '?'
 	return col
 
-def check_modified_categories(col,validCategories,modifiedList):
-	col_val= []
-	if(col in modifiedList):
-		col_val = [validCategories[i] for i in range(len(validCategories)) if validCategories[i]==col]
-		return col_val[0]
-
-	else:  
-		for i in range(len(modifiedList)):
-			if((difflib.SequenceMatcher(None,col,modifiedList[i]).ratio()) >= 0.87):
-				col_val = [validCategories[i] for i in range(len(validCategories)) if validCategories[i]==col]
-		return col_val[0]
-
 def clean_categorical_cols(categorical_json):
 	
 	global original_dataframe
 	dirtyCount = 0
 	validCount = 0
 	totalCount = 0
-	modifiedList =[]
-	validCategories = categorical_json['preferences']['categories']
+	modifiedList =list()
+	validCategories = (categorical_json['preferences']['categories'])[0].split(',')
 	catColumnName = categorical_json['name']
 	totalCounts = original_dataframe[catColumnName].shape[0]
 	original_dataframe[catColumnName] = original_dataframe[catColumnName].astype(str).apply(remove_chars)
@@ -251,16 +239,26 @@ def clean_categorical_cols(categorical_json):
 	original_dataframe.reset_index(drop=True, inplace=True)
 		
 	for j in range(len(validCategories)):
-
-		modifiedstr=validCategories[j].lower()
-		modifiedstr = re.sub(r'\W+', '', modifiedstr)
+		modifiedstr = re.sub(r'\W+', '', validCategories[j].lower())
 		modifiedList.append(modifiedstr)
-	
+
+	print(f"modified list is is: {modifiedList}")
+
 	original_dataframe[catColumnName] = original_dataframe[catColumnName].apply(modify_categories)
-	original_dataframe[catColumnName] = original_dataframe[catColumnName].apply(lambda col: check_modified_categories(col,validCategories,modifiedList))
+
+	for i in range(len(original_dataframe[catColumnName])):
+
+		for j in range(len(validCategories)):
+
+			if(original_dataframe[catColumnName][i] == modifiedList[j]):
+				original_dataframe[catColumnName].replace({original_dataframe[catColumnName][i]:validCategories[j]},inplace=True)
+				break
+			elif((difflib.SequenceMatcher(None,original_dataframe[catColumnName][i],modifiedList[j]).ratio()) >= 0.87):
+				original_dataframe[catColumnName].replace({original_dataframe[catColumnName][i]:validCategories[j]},inplace=True)
+				break
 	
 	original_dataframe[catColumnName] = original_dataframe[catColumnName].apply(lambda col: check_valid_categories(col,validCategories))	
-	dirtyCount = dirtyCount + original_dataframe[catColumnName].str.count('\?').sum()
+	dirtyCount = dirtyCount + (original_dataframe[catColumnName] == '?').astype(int).sum(axis=0)
 				
 
 	original_dataframe[catColumnName].replace({'?':np.nan},inplace=True)
@@ -272,10 +270,10 @@ def clean_categorical_cols(categorical_json):
 	dict1={}
 	values = original_dataframe[catColumnName].value_counts().index.tolist()
 	for i in range(len(values)):
-		dict1[values[i]]=original_dataframe[catColumnName].value_counts()[i]
+		dict1[values[i]]=original_dataframe[catColumnName].value_counts()[i].astype(str)
     
 	print({'name': catColumnName, 'type': 'categorical', 'validCount' : validCount, 'categoryStats' : dict1})
-	socketio.emit('cleaningStepDataUpdate',	{'name': catColumnName, 'type': 'categorical', 'validCount' : validCount, 'categoryStats' : dict1})
+	socketio.emit('cleaningStepDataUpdate',	{'name': catColumnName, 'type': 'categorical', 'validCount' : int(validCount), 'categoryStats' : dict1})
 	
 
 

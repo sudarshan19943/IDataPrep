@@ -9,6 +9,13 @@ import difflib
 import csv
 import json
 import base64
+from sklearn.model_selection import train_test_split
+from sklearn import preprocessing as sk
+from sklearn.neural_network import MLPClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.svm import SVC
+from sklearn.tree import DecisionTreeClassifier
 
 app = Flask(__name__)
 socketio = SocketIO(app ,ping_interval=500, ping_timeout=55000,async_mode='threading') 
@@ -19,6 +26,7 @@ allow_zero_flag = False
 features_data = []
 base64_string = ''
 original_dataframe = pd.DataFrame()
+clean_data = pd.DataFrame()
 target = pd.DataFrame()
 
 
@@ -39,6 +47,7 @@ def handleData(data,h_flag,t_flag):
 
 @socketio.on('loadFeaturesPayload')
 def parseDataOnPayload(json_data):
+	global clean_data
 	cleanData(json_data)
 	global original_dataframe
 	original_dataframe.to_csv('dataset1_processed.csv',index=False,line_terminator='\n')
@@ -48,7 +57,77 @@ def parseDataOnPayload(json_data):
 	
 	socketio.emit('cleaningStepComplete', 'Cleaning complete')
 	socketio.emit('cleanedDatasetOutput',base64_string)
+
+	clean_data.to_csv('encoded.csv',index=False,line_terminator='\n')
+
+
+	print(original_dataframe.shape)
+	print(clean_data.shape)
 	
+	call_machine_learning_models()
+
+	# ####### ML part #########
+
+def call_machine_learning_models():
+	global original_dataframe
+	global target
+	global clean_data
+
+	#Encode the target variable
+	target = encode_labels(original_dataframe.iloc[:,-1])
+
+	print(f"DATA: {clean_data}")
+	print(f"TARGET: {target}")
+
+	X_train, X_val, y_train, y_val = train_test_split(clean_data, target, test_size=0.3)
+
+	#SVC
+	clf_svc = SVC().fit(X_train, y_train)
+	svc_y_pred = clf_svc.predict(X_validation)
+	svc_accuracy = accuracy_score(y_validation, svc_y_pred)
+	print(f"Accuracy score of SVC is: {svc_accuracy}")
+
+	#MLP
+	clf_mlp = MLPClassifier().fit(X_train, y_train)
+	mlp_y_pred = clf_mlp.predict(X_validation)
+	mlp_accuracy = accuracy_score(y_validation, mlp_y_pred)
+	print(f"Accuracy score of MLP is: {mlp_accuracy}")
+
+	#Decision Tree
+	clf_dt = DecisionTreeClassifier().fit(X_train, y_train)
+	dt_y_pred = clf_dt.predict(X_validation)
+	dt_accuracy = accuracy_score(y_validation, dt_y_pred)
+	print(f"Accuracy score of SVC is: {dt_accuracy}")
+
+	#Random Forest Classifier
+	clf_rf = RandomForestClassifier().fit(X_train, y_train)
+	rf_y_pred = clf_rf.predict(X_validation)
+	rf_accuracy = accuracy_score(y_validation, rf_y_pred)
+	print(f"Accuracy score of SVC is: {rf_accuracy}")
+
+	
+	# 	multinomialNBClf = MultinomialNB()
+	# 	accTrainNB,accTestNB = classifyDatasets(classifier=multinomialNBClf,classifierName="Multinomial Naive Bayes Classifier ")
+
+	# 	svmClf = SVC(C=1.0, kernel='linear')
+	# 	accTrainSVM,accTestSVM = classifyDatasets(classifier=svmClf,classifierName="Support Vector Machine Classifier ")
+
+	# def classifyDatasets(classifier,classifierName):
+
+	#     clf = classifier.fit(X_train, y_train)
+	#     accTrain = clf.score(X_train, y_train) * 100
+	#     print('\t \t Accuracy of '+ classifierName +' on training set: ' + str(accTrain))
+
+	#     accTest = clf.score(X_val, y_val) * 100
+	#     print('\t \t Accuracy of '+ classifierName +' on Test set: ' + str(accTest),'\n')
+
+	#     # y_train_pred = clf.predict(X_train)
+
+	#     # y_test_pred = clf.predict(X_val)
+
+	#     return accTrain,accTest
+
+
 def read_the_csv(data,flag):
 	csvList = data.split('\n')
 	with open('uncleaned.csv', 'w', newline='') as myfile:
@@ -64,18 +143,16 @@ def get_dic_from_two_lists(keys, values):
 def process_data(flag):
 
 	global original_dataframe
-	global target 
+	# global target 
 
 	if(flag):
 		original_dataframe = pd.read_csv('uncleaned.csv',header=0)
-		target = original_dataframe[original_dataframe.columns[-1]]
-		original_dataframe.drop(original_dataframe.columns[-1], axis=1, inplace=True)
+		# target = original_dataframe[original_dataframe.columns[-1]]
 
 	else :
 		names = []
 		original_dataframe = pd.read_csv('uncleaned.csv')
-		target = original_dataframe[original_dataframe.columns[-1]]
-		original_dataframe.drop(original_dataframe.columns[-1], axis=1, inplace=True)
+		# target = original_dataframe[original_dataframe.columns[-1]]
 		for i in range(len(original_dataframe.columns)):
 			names.append(str(i))
 		original_dataframe = pd.read_csv('uncleaned.csv', names=names)
@@ -137,7 +214,7 @@ def cleanData(json_data):
 	print('origin',original_dataframe.columns)
 	original_dataframe.columns  = newHeaders
 
-	for json_itr in range(len(json_data)):	
+	for json_itr in range(len(json_data)-1):	
 
 		if(json_data[json_itr]['type']=='numeric'):
 			numeric_json = json_data[json_itr]
@@ -153,6 +230,7 @@ def cleanData(json_data):
 def clean_numeric_cols(numeric_json):
 
 	global original_dataframe
+	global clean_data
 	
 	countOfNegatives = 0
 	countOfZeros = 0
@@ -203,11 +281,37 @@ def clean_numeric_cols(numeric_json):
 		 'neg': int(countOfNegatives)}})
 
 	else:
-
 		validCounts  = totalCounts - countOfNumericNan 
 		socketio.emit('cleaningStepDataUpdate', {'name': numericColumnName, 'type': 'numeric', 'validCount' : int(validCounts), 'dirtyStats' : {'nan': int(countOfNumericNan)}})
+	
+	clean_data = pd.concat([clean_data,	scale_to_zero_mean_and_unit_variance(original_dataframe[numericColumnName]) ], axis=1)
 
+def scale_to_zero_mean_and_unit_variance(column):
+	scaled_data = sk.scale(column)
+	scaled_df = pd.DataFrame(scaled_data)
+	return scaled_df
 
+def one_hot_encoding_of_column(column):
+    # First, use LabelEncoder to convert Strings to numeric values as OHE does not accept Strings
+	lab_enc = sk.LabelEncoder()
+	lab_enc.fit(column)
+	label_encoded = lab_enc.transform(column)
+
+    # Reshape the label_encoded array into a Nx1 matrix as OHE requires a 2-D matrix as input
+	label_encoded = np.reshape(label_encoded, (label_encoded.shape[0],1))
+	OHE_encoder = sk.OneHotEncoder(sparse=False)
+	OHE_encoder.fit(label_encoded)
+	OHE_result = OHE_encoder.transform(label_encoded)
+	OHE_df = pd.DataFrame(OHE_result)
+	return OHE_df
+
+def encode_labels(data):
+	lab_enc = sk.LabelEncoder()
+	lab_enc.fit(data)
+	labels_encoded = lab_enc.transform(data)
+	labels_encoded = np.reshape(labels_encoded, (labels_encoded.shape[0],1))
+	labels_encoded = pd.DataFrame(labels_encoded)
+	return labels_encoded
 
 def remove_chars(col):
     if(re.match(r'[^A-Za-z0-9]+',col)):
@@ -227,7 +331,7 @@ def check_valid_categories(col, validCategories):
 	return col
 
 def clean_categorical_cols(categorical_json):
-	
+	global clean_data
 	global original_dataframe
 	dirtyCount = 0
 	validCount = 0
@@ -279,8 +383,8 @@ def clean_categorical_cols(categorical_json):
     
 	print({'name': catColumnName, 'type': 'categorical', 'validCount' : validCount, 'categoryStats' : dict1})
 	socketio.emit('cleaningStepDataUpdate',	{'name': catColumnName, 'type': 'categorical', 'validCount' : int(validCount), 'categoryStats' : dict1})
-	
 
+	clean_data = pd.concat([clean_data,	one_hot_encoding_of_column(original_dataframe[catColumnName]) ], axis=1)
 
 if __name__ == '__main__':
 	socketio.run(app) 

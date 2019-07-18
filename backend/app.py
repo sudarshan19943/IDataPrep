@@ -16,6 +16,9 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import accuracy_score
+import warnings
+warnings.filterwarnings('ignore')
 
 app = Flask(__name__)
 socketio = SocketIO(app ,ping_interval=500, ping_timeout=55000,async_mode='threading') 
@@ -73,6 +76,7 @@ def call_machine_learning_models():
 	global target
 	global clean_data
 
+	clean_data.dropna(inplace=True)
 	#Encode the target variable
 	target = encode_labels(original_dataframe.iloc[:,-1])
 
@@ -83,49 +87,27 @@ def call_machine_learning_models():
 
 	#SVC
 	clf_svc = SVC().fit(X_train, y_train)
-	svc_y_pred = clf_svc.predict(X_validation)
-	svc_accuracy = accuracy_score(y_validation, svc_y_pred)
+	svc_y_pred = clf_svc.predict(X_val)
+	svc_accuracy = accuracy_score(y_val, svc_y_pred)
 	print(f"Accuracy score of SVC is: {svc_accuracy}")
 
 	#MLP
 	clf_mlp = MLPClassifier().fit(X_train, y_train)
-	mlp_y_pred = clf_mlp.predict(X_validation)
-	mlp_accuracy = accuracy_score(y_validation, mlp_y_pred)
+	mlp_y_pred = clf_mlp.predict(X_val)
+	mlp_accuracy = accuracy_score(y_val, mlp_y_pred)
 	print(f"Accuracy score of MLP is: {mlp_accuracy}")
 
 	#Decision Tree
 	clf_dt = DecisionTreeClassifier().fit(X_train, y_train)
-	dt_y_pred = clf_dt.predict(X_validation)
-	dt_accuracy = accuracy_score(y_validation, dt_y_pred)
-	print(f"Accuracy score of SVC is: {dt_accuracy}")
+	dt_y_pred = clf_dt.predict(X_val)
+	dt_accuracy = accuracy_score(y_val, dt_y_pred)
+	print(f"Accuracy score of Decision Tree Classifier is: {dt_accuracy}")
 
 	#Random Forest Classifier
 	clf_rf = RandomForestClassifier().fit(X_train, y_train)
-	rf_y_pred = clf_rf.predict(X_validation)
-	rf_accuracy = accuracy_score(y_validation, rf_y_pred)
-	print(f"Accuracy score of SVC is: {rf_accuracy}")
-
-	
-	# 	multinomialNBClf = MultinomialNB()
-	# 	accTrainNB,accTestNB = classifyDatasets(classifier=multinomialNBClf,classifierName="Multinomial Naive Bayes Classifier ")
-
-	# 	svmClf = SVC(C=1.0, kernel='linear')
-	# 	accTrainSVM,accTestSVM = classifyDatasets(classifier=svmClf,classifierName="Support Vector Machine Classifier ")
-
-	# def classifyDatasets(classifier,classifierName):
-
-	#     clf = classifier.fit(X_train, y_train)
-	#     accTrain = clf.score(X_train, y_train) * 100
-	#     print('\t \t Accuracy of '+ classifierName +' on training set: ' + str(accTrain))
-
-	#     accTest = clf.score(X_val, y_val) * 100
-	#     print('\t \t Accuracy of '+ classifierName +' on Test set: ' + str(accTest),'\n')
-
-	#     # y_train_pred = clf.predict(X_train)
-
-	#     # y_test_pred = clf.predict(X_val)
-
-	#     return accTrain,accTest
+	rf_y_pred = clf_rf.predict(X_val)
+	rf_accuracy = accuracy_score(y_val, rf_y_pred)
+	print(f"Accuracy score of Random Forest Classifier is: {rf_accuracy}")
 
 
 def read_the_csv(data,flag):
@@ -143,16 +125,13 @@ def get_dic_from_two_lists(keys, values):
 def process_data(flag):
 
 	global original_dataframe
-	# global target 
 
 	if(flag):
 		original_dataframe = pd.read_csv('uncleaned.csv',header=0)
-		# target = original_dataframe[original_dataframe.columns[-1]]
 
 	else :
 		names = []
 		original_dataframe = pd.read_csv('uncleaned.csv')
-		# target = original_dataframe[original_dataframe.columns[-1]]
 		for i in range(len(original_dataframe.columns)):
 			names.append(str(i))
 		original_dataframe = pd.read_csv('uncleaned.csv', names=names)
@@ -284,12 +263,15 @@ def clean_numeric_cols(numeric_json):
 		validCounts  = totalCounts - countOfNumericNan 
 		socketio.emit('cleaningStepDataUpdate', {'name': numericColumnName, 'type': 'numeric', 'validCount' : int(validCounts), 'dirtyStats' : {'nan': int(countOfNumericNan)}})
 	
-	clean_data = pd.concat([clean_data,	scale_to_zero_mean_and_unit_variance(original_dataframe[numericColumnName]) ], axis=1)
+	numeric_matrix = original_dataframe[numericColumnName].as_matrix() 
+	scaled_numeric_col = scale_to_zero_mean_and_unit_variance(numeric_matrix)
+	scaled_numeric_col = pd.DataFrame(scaled_numeric_col)
+	clean_data = pd.concat([clean_data,	scaled_numeric_col], axis=1)
 
 def scale_to_zero_mean_and_unit_variance(column):
 	scaled_data = sk.scale(column)
-	scaled_df = pd.DataFrame(scaled_data)
-	return scaled_df
+	scaled_data = np.reshape(scaled_data,(scaled_data.shape[0],1))
+	return scaled_data
 
 def one_hot_encoding_of_column(column):
     # First, use LabelEncoder to convert Strings to numeric values as OHE does not accept Strings

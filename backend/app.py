@@ -19,6 +19,7 @@ allow_zero_flag = False
 features_data = []
 base64_string = ''
 original_dataframe = pd.DataFrame()
+target = pd.DataFrame()
 
 
 @socketio.on('message')
@@ -63,17 +64,21 @@ def get_dic_from_two_lists(keys, values):
 def process_data(flag):
 
 	global original_dataframe
+	global target 
 
 	if(flag):
 		original_dataframe = pd.read_csv('uncleaned.csv',header=0)
+		target = original_dataframe[original_dataframe.columns[-1]]
+		original_dataframe.drop(original_dataframe.columns[-1], axis=1, inplace=True)
 
 	else :
 		names = []
 		original_dataframe = pd.read_csv('uncleaned.csv')
+		target = original_dataframe[original_dataframe.columns[-1]]
+		original_dataframe.drop(original_dataframe.columns[-1], axis=1, inplace=True)
 		for i in range(len(original_dataframe.columns)):
 			names.append(str(i))
 		original_dataframe = pd.read_csv('uncleaned.csv', names=names)
-		
 	
 
 def send_header():
@@ -233,7 +238,7 @@ def clean_categorical_cols(categorical_json):
 	totalCounts = original_dataframe[catColumnName].shape[0]
 	original_dataframe[catColumnName] = original_dataframe[catColumnName].astype(str).apply(remove_chars)
 	dirtyCount = original_dataframe[catColumnName].str.count('\?').sum()
-		
+	
 	original_dataframe[catColumnName].replace({'?':np.nan},inplace=True)
 	original_dataframe.dropna(inplace=True)
 	original_dataframe.reset_index(drop=True, inplace=True)

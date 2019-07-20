@@ -10,7 +10,7 @@ import csv
 import json
 import base64
 from sklearn.model_selection import train_test_split
-from sklearn import preprocessing as sk
+from sklearn import preprocessing
 from sklearn.neural_network import MLPClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
@@ -29,9 +29,9 @@ allow_zero_flag = False
 features_data = []
 base64_string = ''
 original_dataframe = pd.DataFrame()
-clean_data = pd.DataFrame()
-target = pd.DataFrame()
-
+newdf = pd.DataFrame()
+cleaned_df = pd.DataFrame()
+targetName=''
 
 @socketio.on('message')
 def handleMessage(msg):
@@ -40,7 +40,6 @@ def handleMessage(msg):
 
 @socketio.on('loaddata')
 def handleData(data,h_flag,t_flag):
-
 	headers_flag = h_flag
 	task_flag = t_flag
 	read_the_csv(data,headers_flag)
@@ -50,65 +49,78 @@ def handleData(data,h_flag,t_flag):
 
 @socketio.on('loadFeaturesPayload')
 def parseDataOnPayload(json_data):
-	global clean_data
+
 	cleanData(json_data)
 	global original_dataframe
+	global cleaned_df
+
 	original_dataframe.to_csv('dataset1_processed.csv',index=False,line_terminator='\n')
 	with open("dataset1_processed.csv", "rb") as csvfile:
 		base64_string = base64.b64encode(csvfile.read())
 	csvfile.close()
-	
 	socketio.emit('cleaningStepComplete', 'Cleaning complete')
 	socketio.emit('cleanedDatasetOutput',base64_string)
-
-	clean_data.to_csv('encoded.csv',index=False,line_terminator='\n')
-
-
-	print(original_dataframe.shape)
-	print(clean_data.shape)
-	
+	normalizeNumericals(json_data)
+	print("After Norm : \n",original_dataframe)
+	oneHotEncoding(json_data)
+	print("After One hot:\n",original_dataframe)
 	call_machine_learning_models()
 
-	# ####### ML part #########
+# ####### ML part #########
+
+def classifyDatasets(X_train, X_test, y_train, y_test,classifier,classifierName):
+
+	classifierTrainset = classifier.fit(X_train, y_train)
+	accTrain = classifierTrainset.score(X_train, y_train) * 100
+
+	accTest = classifierTrainset.score(X_test, y_test) * 100
+	print('\t \t Accuracy of '+ classifierName +' on Test set: ' + str(accTest),'\n')
+
+	y_train_pred = classifierTrainset.predict(X_train)
+	y_test_pred = classifierTrainset.predict(X_test)
+
+	return accTest
 
 def call_machine_learning_models():
+
 	global original_dataframe
-	global target
-	global clean_data
+	global targetName
 
-	clean_data.dropna(inplace=True)
-	#Encode the target variable
-	target = encode_labels(original_dataframe.iloc[:,-1])
 
-	print(f"DATA: {clean_data}")
-	print(f"TARGET: {target}")
+	dict_accuracy = {}
 
-	X_train, X_val, y_train, y_val = train_test_split(clean_data, target, test_size=0.3)
+	data = np.array(original_dataframe.drop([targetName], axis=1))
+	target = np.array(original_dataframe[targetName])
 
-	#SVC
-	clf_svc = SVC().fit(X_train, y_train)
-	svc_y_pred = clf_svc.predict(X_val)
-	svc_accuracy = accuracy_score(y_val, svc_y_pred)
-	print(f"Accuracy score of SVC is: {svc_accuracy}")
+	X_train, X_test, y_train, y_test = train_test_split(data, target, test_size=0.4)
 
-	#MLP
-	clf_mlp = MLPClassifier().fit(X_train, y_train)
-	mlp_y_pred = clf_mlp.predict(X_val)
-	mlp_accuracy = accuracy_score(y_val, mlp_y_pred)
-	print(f"Accuracy score of MLP is: {mlp_accuracy}")
+	clf_rf = RandomForestClassifier(bootstrap = True,max_depth= 12, n_estimators= 100)
+	acc_test_rf = classifyDatasets(X_train = X_train, X_test = X_test,y_train = y_train,y_test= y_test,classifier=clf_rf,
+															classifierName="Random Forest Classifier ")
+	dict_accuracy['Random Forest Classifier'] = acc_test_rf
 
-	#Decision Tree
-	clf_dt = DecisionTreeClassifier().fit(X_train, y_train)
-	dt_y_pred = clf_dt.predict(X_val)
-	dt_accuracy = accuracy_score(y_val, dt_y_pred)
-	print(f"Accuracy score of Decision Tree Classifier is: {dt_accuracy}")
+	clf_dt = DecisionTreeClassifier(max_depth=10)
+	acc_test_dt = classifyDatasets(X_train = X_train, X_test = X_test,y_train = y_train,y_test= y_test,classifier=clf_dt,
+															classifierName="Decision Tree Classifier ")
+	dict_accuracy['Decision Tree Classifier'] = acc_test_dt
 
-	#Random Forest Classifier
-	clf_rf = RandomForestClassifier().fit(X_train, y_train)
-	rf_y_pred = clf_rf.predict(X_val)
-	rf_accuracy = accuracy_score(y_val, rf_y_pred)
-	print(f"Accuracy score of Random Forest Classifier is: {rf_accuracy}")
+	clf_mlp = MLPClassifier()
+	acc_test_mlp= classifyDatasets(X_train = X_train, X_test = X_test,y_train = y_train,y_test= y_test,classifier=clf_mlp,
+															classifierName="Multilayer Perceptron Classifier ")
+	dict_accuracy['Multilayer Perceptron Classifier'] = acc_test_mlp
 
+	logistic_regression_clf = LogisticRegression(penalty='l2',dual=False,max_iter=100)
+	acc_test_log= classifyDatasets(X_train = X_train, X_test = X_test,y_train = y_train,y_test= y_test,classifier=logistic_regression_clf,classifierName="Logistic Regression Classifier ")
+
+	dict_accuracy['Logistic Regression Classifier'] = acc_test_log
+
+	clf_svc = SVC(C=1.0, kernel='linear')
+	acc_test_svm = classifyDatasets(X_train = X_train, X_test = X_test,y_train = y_train,y_test= y_test,classifier=clf_svc,
+															classifierName="Support Vector Machine Classifier ")
+	dict_accuracy['Support Vector Machine Classifier'] = acc_test_svm 
+  
+	sorted_x = sorted(dict_accuracy.items(), key=lambda kv: kv[1],reverse=True)
+	print(dict(sorted_x))
 
 def read_the_csv(data,flag):
 	csvList = data.split('\n')
@@ -135,10 +147,10 @@ def process_data(flag):
 		for i in range(len(original_dataframe.columns)):
 			names.append(str(i))
 		original_dataframe = pd.read_csv('uncleaned.csv', names=names)
-	
+
 
 def send_header():
-	
+
 	global original_dataframe
 
 	headers = list(original_dataframe.columns.values)
@@ -149,12 +161,12 @@ def check_column_type():
 	featuresReceivedFromBackend = []
 
 	global original_dataframe
-
 	isCategorical = {}
 	for var in original_dataframe.columns:
-		isCategorical[var] = 1.*original_dataframe[var].nunique()/original_dataframe[var].count() < 0.1
+		isCategorical[var] = 1.*original_dataframe[var].nunique()/original_dataframe[var].count() < 0.08
 
 	for columnName in isCategorical:
+
 		if(isCategorical[columnName] == True):
 			dict_keys = ['name', 'type','category']
 			dictCategory=original_dataframe[columnName].astype(str).str.lower().unique().tolist()
@@ -162,8 +174,7 @@ def check_column_type():
 			data = get_dic_from_two_lists(dict_keys, dict_values)
 			data_list.append(data)
 			featuresReceivedFromBackend = json.dumps(data_list)
-			print(featuresReceivedFromBackend)
-
+		
 		elif(is_numeric_dtype(original_dataframe[columnName])):
 			dict_keys = ['name', 'type']
 			dict_values = [columnName, 'numeric']
@@ -177,14 +188,14 @@ def check_column_type():
 			data = get_dic_from_two_lists(dict_keys, dict_values)
 			data_list.append(data)
 			featuresReceivedFromBackend = json.dumps(data_list)
-			print(featuresReceivedFromBackend)
-
+		
 	socketio.emit('featuresReceivedFromBackend', featuresReceivedFromBackend)
 
 def cleanData(json_data):
 
 	newHeaders = []
 	global original_dataframe
+	global targetName
 
 	for i in range(len(json_data)):
 		newHeaders.append(json_data[i]['name'])
@@ -192,25 +203,30 @@ def cleanData(json_data):
 	print('\n \n')
 	print('origin',original_dataframe.columns)
 	original_dataframe.columns  = newHeaders
+	targetName = json_data[len(json_data)-1]['name']
+	print("target : ",targetName)
 
 	for json_itr in range(len(json_data)-1):	
 
 		if(json_data[json_itr]['type']=='numeric'):
+
 			numeric_json = json_data[json_itr]
 			socketio.emit('cleaningStep', 'Cleaning numeric column ' + numeric_json['name'])
 			clean_numeric_cols(numeric_json)
-	
+			
+
 		else:
+
 			categorical_json = json_data[json_itr]  
 			socketio.emit('cleaningStep',  'Cleaning categorical column ' + categorical_json['name'])
 			clean_categorical_cols(categorical_json)
-			
 		
+			
+	
 def clean_numeric_cols(numeric_json):
 
 	global original_dataframe
-	global clean_data
-	
+
 	countOfNegatives = 0
 	countOfZeros = 0
 	validCounts = 0
@@ -222,7 +238,6 @@ def clean_numeric_cols(numeric_json):
 	countOfNumericNan = (original_dataframe[numericColumnName] == np.nan).astype(int).sum(axis=0)
 	original_dataframe.dropna(inplace=True)
 	original_dataframe.reset_index(drop=True,inplace=True)
-	
 
 	if(isNegativeAllowed == False and isZeroAllowed==True): 
 
@@ -232,7 +247,7 @@ def clean_numeric_cols(numeric_json):
 		original_dataframe.reset_index(drop=True,inplace=True)
 		validCounts  = totalCounts - (countOfNumericNan + countOfNegatives)
 		socketio.emit('cleaningStepDataUpdate', {'name': numericColumnName, 'type': 'numeric',
-		 'validCount' : int(validCounts), 'dirtyStats' : {'nan': int(countOfNumericNan), 'neg': int(countOfNegatives)}})
+			'validCount' : int(validCounts), 'dirtyStats' : {'nan': int(countOfNumericNan), 'neg': int(countOfNegatives)}})
 
 	elif(isZeroAllowed == False and isNegativeAllowed == True):
 		
@@ -241,8 +256,7 @@ def clean_numeric_cols(numeric_json):
 		original_dataframe[numericColumnName][original_dataframe[numericColumnName] == 0] = median
 		validCounts  = totalCounts - (countOfNumericNan + countOfZeros)
 		socketio.emit('cleaningStepDataUpdate', {'name': numericColumnName, 'type': 'numeric',
-		 'validCount' : int(validCounts), 'dirtyStats' : {'nan': int(countOfNumericNan), 'zero': int(countOfZeros)}})
-
+			'validCount' : int(validCounts), 'dirtyStats' : {'nan': int(countOfNumericNan), 'zero': int(countOfZeros)}})
 
 	elif(isZeroAllowed == False and isNegativeAllowed == False):
 
@@ -257,49 +271,44 @@ def clean_numeric_cols(numeric_json):
 		validCounts  = totalCounts - (countOfNumericNan + countOfZeros + countOfNegatives)
 		socketio.emit('cleaningStepDataUpdate', {'name': numericColumnName, 'type': 'numeric', 
 		'validCount' : int(validCounts), 'dirtyStats' : {'nan': int(countOfNumericNan), 'zero': int(countOfZeros),
-		 'neg': int(countOfNegatives)}})
+			'neg': int(countOfNegatives)}})
 
 	else:
 		validCounts  = totalCounts - countOfNumericNan 
 		socketio.emit('cleaningStepDataUpdate', {'name': numericColumnName, 'type': 'numeric', 'validCount' : int(validCounts), 'dirtyStats' : {'nan': int(countOfNumericNan)}})
-	
-	numeric_matrix = original_dataframe[numericColumnName].as_matrix() 
-	scaled_numeric_col = scale_to_zero_mean_and_unit_variance(numeric_matrix)
-	scaled_numeric_col = pd.DataFrame(scaled_numeric_col)
-	clean_data = pd.concat([clean_data,	scaled_numeric_col], axis=1)
 
-def scale_to_zero_mean_and_unit_variance(column):
-	scaled_data = sk.scale(column)
-	scaled_data = np.reshape(scaled_data,(scaled_data.shape[0],1))
-	return scaled_data
 
-def one_hot_encoding_of_column(column):
-    # First, use LabelEncoder to convert Strings to numeric values as OHE does not accept Strings
-	lab_enc = sk.LabelEncoder()
-	lab_enc.fit(column)
-	label_encoded = lab_enc.transform(column)
+def normalizeNumericals(json_data):
 
-    # Reshape the label_encoded array into a Nx1 matrix as OHE requires a 2-D matrix as input
-	label_encoded = np.reshape(label_encoded, (label_encoded.shape[0],1))
-	OHE_encoder = sk.OneHotEncoder(sparse=False)
-	OHE_encoder.fit(label_encoded)
-	OHE_result = OHE_encoder.transform(label_encoded)
-	OHE_df = pd.DataFrame(OHE_result)
-	return OHE_df
+	global original_dataframe
+	global targetName
 
-def encode_labels(data):
-	lab_enc = sk.LabelEncoder()
-	lab_enc.fit(data)
-	labels_encoded = lab_enc.transform(data)
-	labels_encoded = np.reshape(labels_encoded, (labels_encoded.shape[0],1))
-	labels_encoded = pd.DataFrame(labels_encoded)
-	return labels_encoded
+	for json_itr in range(len(json_data)):	
+
+		if(json_data[json_itr]['type']=='numeric' and json_data[json_itr]['name'] != targetName):
+
+			columnName = json_data[json_itr]['name']
+			original_dataframe[columnName] = original_dataframe[columnName].astype(float)
+			scale = preprocessing.MinMaxScaler(feature_range=(0, 1))
+			columnScaled = scale.fit_transform(original_dataframe[columnName].values.reshape(-1, 1))
+			original_dataframe[columnName] = pd.DataFrame(columnScaled)
+
+def oneHotEncoding(json_data):
+
+	global original_dataframe
+
+	for json_itr in range(len(json_data)):	
+
+		if(json_data[json_itr]['type']=='categorical' and json_data[json_itr]['name'] != targetName):
+			columnName = json_data[json_itr]['name']
+			original_dataframe = pd.concat([original_dataframe, pd.get_dummies(original_dataframe[columnName],prefix=columnName,prefix_sep='_')], axis=1)
+			original_dataframe.drop(columnName,axis=1,inplace=True)
 
 def remove_chars(col):
-    if(re.match(r'[^A-Za-z0-9]+',col)):
-        return '?'
-    else:
-        return col
+	if(re.match(r'[^A-Za-z0-9]+',col)):
+		return '?'
+	else:
+		return col
 
 def modify_categories(col):
 	modifiedRowValue = re.sub(r'\W+', '', col)
@@ -313,7 +322,7 @@ def check_valid_categories(col, validCategories):
 	return col
 
 def clean_categorical_cols(categorical_json):
-	global clean_data
+
 	global original_dataframe
 	dirtyCount = 0
 	validCount = 0
@@ -321,10 +330,9 @@ def clean_categorical_cols(categorical_json):
 	modifiedList =list()
 	validCategories = (categorical_json['preferences']['categories'])[0].split(',')
 	catColumnName = categorical_json['name']
-	totalCounts = original_dataframe[catColumnName].shape[0]
+	totalCount = original_dataframe[catColumnName].shape[0]
 	original_dataframe[catColumnName] = original_dataframe[catColumnName].astype(str).apply(remove_chars)
 	dirtyCount = original_dataframe[catColumnName].str.count('\?').sum()
-	
 	original_dataframe[catColumnName].replace({'?':np.nan},inplace=True)
 	original_dataframe.dropna(inplace=True)
 	original_dataframe.reset_index(drop=True, inplace=True)
@@ -332,8 +340,6 @@ def clean_categorical_cols(categorical_json):
 	for j in range(len(validCategories)):
 		modifiedstr = re.sub(r'\W+', '', validCategories[j].lower())
 		modifiedList.append(modifiedstr)
-
-	print(f"modified list is is: {modifiedList}")
 
 	original_dataframe[catColumnName] = original_dataframe[catColumnName].apply(modify_categories)
 
@@ -347,26 +353,23 @@ def clean_categorical_cols(categorical_json):
 			elif((difflib.SequenceMatcher(None,original_dataframe[catColumnName][i],modifiedList[j]).ratio()) >= 0.87):
 				original_dataframe[catColumnName].replace({original_dataframe[catColumnName][i]:validCategories[j]},inplace=True)
 				break
-	
+
 	original_dataframe[catColumnName] = original_dataframe[catColumnName].apply(lambda col: check_valid_categories(col,validCategories))	
-	dirtyCount = dirtyCount + (original_dataframe[catColumnName] == '?').astype(int).sum(axis=0)
-				
+	dirtyCount = dirtyCount + (original_dataframe[catColumnName] == '?').astype(int).sum(axis=0)				
 
 	original_dataframe[catColumnName].replace({'?':np.nan},inplace=True)
 	original_dataframe.dropna(inplace=True)
 	original_dataframe.reset_index(drop=True, inplace=True)
 
-	
 	validCount = totalCount - dirtyCount
 	dict1={}
 	values = original_dataframe[catColumnName].value_counts().index.tolist()
 	for i in range(len(values)):
 		dict1[values[i]]=original_dataframe[catColumnName].value_counts()[i].astype(str)
-    
+
 	print({'name': catColumnName, 'type': 'categorical', 'validCount' : validCount, 'categoryStats' : dict1})
 	socketio.emit('cleaningStepDataUpdate',	{'name': catColumnName, 'type': 'categorical', 'validCount' : int(validCount), 'categoryStats' : dict1})
 
-	clean_data = pd.concat([clean_data,	one_hot_encoding_of_column(original_dataframe[catColumnName]) ], axis=1)
 
 if __name__ == '__main__':
 	socketio.run(app) 

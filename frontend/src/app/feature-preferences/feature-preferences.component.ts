@@ -1,5 +1,4 @@
-import { Component, OnInit, EventEmitter, Output } from '@angular/core';
-import {sent, received} from './Features'
+import { Component, OnInit, EventEmitter, Output, Input } from '@angular/core';
 import { MatChipInputEvent } from '@angular/material/chips';
 import {COMMA, ENTER} from '@angular/cdk/keycodes';
 import { DataService } from '../data.service';
@@ -15,7 +14,9 @@ export class FeaturePreferencesComponent implements OnInit {
   readonly separatorKeysCodes: number[] = [ENTER, COMMA];
   FeatureType = {'t1': 'numeric', 't2': 'categorical'};
   featuresReceived;
+  targetFeatureindex = -1;
   ready = false;
+  @Input() forClassification;
 
   constructor(private dataservice: DataService) { }
 
@@ -34,6 +35,7 @@ export class FeaturePreferencesComponent implements OnInit {
       feature.preferences.categories = feature.preferences.categories === undefined ? [] : feature.preferences.categories;
     });
     this.featuresReceived = _received;
+    this.targetFeatureindex = _received.length - 1;
   }
 
   addCategory(featureIndex: any, event: MatChipInputEvent): void {
@@ -82,7 +84,11 @@ export class FeaturePreferencesComponent implements OnInit {
           delete feature.preferences.zeroAllowed;
         }
       });
-      this.dataservice.sendFeaturesPayload(this.featuresReceived, this.completed);
+      const payload = {features: this.featuresReceived};
+      if (this.forClassification) {
+        payload['targetFeatureIndex'] = this.targetFeatureindex;
+      }
+      this.dataservice.sendFeaturesPayload(payload, this.completed);
     } else {
       alert('Please wait');
     }

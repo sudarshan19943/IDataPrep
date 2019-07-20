@@ -355,7 +355,9 @@ def clean_categorical_cols(categorical_json):
 				break
 
 	original_dataframe[catColumnName] = original_dataframe[catColumnName].apply(lambda col: check_valid_categories(col,validCategories))	
-	dirtyCount = dirtyCount + (original_dataframe[catColumnName] == '?').astype(int).sum(axis=0)				
+	dirtyCount = (original_dataframe[catColumnName] == '?').astype(int).sum(axis=0)			
+	dirtyCount = dirtyCount + original_dataframe[catColumnName].isna().sum()
+
 
 	original_dataframe[catColumnName].replace({'?':np.nan},inplace=True)
 	original_dataframe.dropna(inplace=True)

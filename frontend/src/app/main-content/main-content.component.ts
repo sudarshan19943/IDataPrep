@@ -24,12 +24,6 @@ export class MainContentComponent implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit() {
-    // // dev purposes
-    //   this.markStepCompleted(0);
-    //   this.markStepCompleted(1);
-    //   this.markStepCompleted(2);
-    //   this.markStepCompleted(3);
-    //   this.stepper.selectedIndex = 0;
     this.cdr.detectChanges();
   }
 
@@ -52,10 +46,6 @@ export class MainContentComponent implements OnInit, AfterViewInit {
 
   resetAll() {
     this.stepper.reset();
-  }
-
-    // for dev only
-  test() {
-    console.log('Testing...');
+    window.location.reload(true);
   }
 }

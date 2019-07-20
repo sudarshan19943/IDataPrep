@@ -18,12 +18,14 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatDividerModule } from '@angular/material/divider';
 
 import { CsvFileUploadComponent } from './csv-file-upload/csv-file-upload.component';
 import { FeaturePreferencesComponent } from './feature-preferences/feature-preferences.component';
 import { DatasetCleaningComponent } from './dataset-cleaning/dataset-cleaning.component';
 import { CsvFileDownloadComponent } from './csv-file-download/csv-file-download.component';
 import { AlgorithmsSuggestionComponent } from './algorithms-suggestion/algorithms-suggestion.component';
+import { CleaningVisualizationComponent } from './cleaning-visualization/cleaning-visualization.component';
 
 @NgModule({
   declarations: [
@@ -36,7 +38,8 @@ import { AlgorithmsSuggestionComponent } from './algorithms-suggestion/algorithm
     FeaturePreferencesComponent,
     DatasetCleaningComponent,
     CsvFileDownloadComponent,
-    AlgorithmsSuggestionComponent
+    AlgorithmsSuggestionComponent,
+    CleaningVisualizationComponent
   ],
   imports: [
     BrowserModule,
@@ -50,7 +53,8 @@ import { AlgorithmsSuggestionComponent } from './algorithms-suggestion/algorithm
     MatCheckboxModule,
     MatIconModule,
     FormsModule,
-    MatProgressBarModule
+    MatProgressBarModule,
+    MatDividerModule
   ],
   providers: [],
   bootstrap: [AppComponent]

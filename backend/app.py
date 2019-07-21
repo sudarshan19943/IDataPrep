@@ -57,7 +57,7 @@ def parseDataOnPayload(json_data):
 		targetIndex = json_data['targetFeatureIndex']
 		targetName = featureData[targetIndex]['name']
 		cleanData(featureData)
-		original_dataframe.to_csv('dataset1_processed.csv',index=False,line_terminator='\n')
+		original_dataframe.to_csv('dataset1_processed.csv' ,index=False,line_terminator='\n')
 		with open("dataset1_processed.csv", "rb") as csvfile:
 			base64_string = base64.b64encode(csvfile.read())
 		csvfile.close()
@@ -68,6 +68,7 @@ def parseDataOnPayload(json_data):
 		oneHotEncoding(featureData)
 		print("After One hot:\n",original_dataframe)
 		call_machine_learning_models()
+
 
 	else:
 
@@ -133,7 +134,8 @@ def call_machine_learning_models():
 	dict_accuracy['Support Vector Machine Classifier'] = acc_test_svm 
   
 	sorted_x = sorted(dict_accuracy.items(), key=lambda kv: kv[1],reverse=True)
-	print(dict(sorted_x))
+	sortedDict = dict(sorted_x)
+	socketio.emit('algorithmAccuracy',{"rank":sortedDict})
 
 def read_the_csv(data,flag):
 	csvList = data.split('\n')

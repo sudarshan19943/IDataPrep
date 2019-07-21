@@ -221,7 +221,7 @@ def cleanData(json_data):
 	original_dataframe.columns  = newHeaders
 
 
-	for json_itr in range(len(json_data)-1):	
+	for json_itr in range(len(json_data)):	
 
 		if(json_data[json_itr]['type']=='numeric'):
 
@@ -319,7 +319,9 @@ def oneHotEncoding(json_data):
 			original_dataframe.drop(columnName,axis=1,inplace=True)
 
 def remove_chars(col):
-	if(re.match(r'[^A-Za-z0-9]+',col)):
+	if (re.search(r'\d', col)):
+		return col
+	if(re.match(r'[^A-Za-z]+',col)):
 		return '?'
 	else:
 		return col
@@ -351,11 +353,12 @@ def clean_categorical_cols(categorical_json):
 	original_dataframe.dropna(inplace=True)
 	original_dataframe.reset_index(drop=True, inplace=True)
 		
-	for j in range(len(validCategories)):
-		modifiedstr = re.sub(r'\W+', '', validCategories[j].lower())
-		modifiedList.append(modifiedstr)
+	# for j in range(len(validCategories)):
+	# 	modifiedstr = re.sub(r'\W+', '', validCategories[j].lower())
+	# 	modifiedList.append(modifiedstr)
 
-	original_dataframe[catColumnName] = original_dataframe[catColumnName].apply(modify_categories)
+	# original_dataframe[catColumnName] = original_dataframe[catColumnName].apply(modify_categories)
+	modifiedList = validCategories
 
 	for i in range(len(original_dataframe[catColumnName])):
 

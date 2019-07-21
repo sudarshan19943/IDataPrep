@@ -57,7 +57,7 @@ def parseDataOnPayload(json_data):
 		targetIndex = json_data['targetFeatureIndex']
 		targetName = featureData[targetIndex]['name']
 		cleanData(featureData)
-		original_dataframe.to_csv('dataset1_processed.csv',index=False,line_terminator='\n')
+		original_dataframe.to_csv('dataset1_processed.csv' ,index=False,line_terminator='\n')
 		with open("dataset1_processed.csv", "rb") as csvfile:
 			base64_string = base64.b64encode(csvfile.read())
 		csvfile.close()
@@ -68,6 +68,7 @@ def parseDataOnPayload(json_data):
 		oneHotEncoding(featureData)
 		print("After One hot:\n",original_dataframe)
 		call_machine_learning_models()
+
 
 	else:
 
@@ -133,7 +134,8 @@ def call_machine_learning_models():
 	dict_accuracy['Support Vector Machine Classifier'] = acc_test_svm 
   
 	sorted_x = sorted(dict_accuracy.items(), key=lambda kv: kv[1],reverse=True)
-	print(dict(sorted_x))
+	sortedDict = dict(sorted_x)
+	socketio.emit('algorithmAccuracy',{"rank":sortedDict})
 
 def read_the_csv(data,flag):
 	csvList = data.split('\n')
@@ -219,7 +221,7 @@ def cleanData(json_data):
 	original_dataframe.columns  = newHeaders
 
 
-	for json_itr in range(len(json_data)-1):	
+	for json_itr in range(len(json_data)):	
 
 		if(json_data[json_itr]['type']=='numeric'):
 
@@ -317,7 +319,9 @@ def oneHotEncoding(json_data):
 			original_dataframe.drop(columnName,axis=1,inplace=True)
 
 def remove_chars(col):
-	if(re.match(r'[^A-Za-z0-9]+',col)):
+	if (re.search(r'\d', col)):
+		return col
+	if(re.match(r'[^A-Za-z]+',col)):
 		return '?'
 	else:
 		return col
@@ -349,11 +353,12 @@ def clean_categorical_cols(categorical_json):
 	original_dataframe.dropna(inplace=True)
 	original_dataframe.reset_index(drop=True, inplace=True)
 		
-	for j in range(len(validCategories)):
-		modifiedstr = re.sub(r'\W+', '', validCategories[j].lower())
-		modifiedList.append(modifiedstr)
+	# for j in range(len(validCategories)):
+	# 	modifiedstr = re.sub(r'\W+', '', validCategories[j].lower())
+	# 	modifiedList.append(modifiedstr)
 
-	original_dataframe[catColumnName] = original_dataframe[catColumnName].apply(modify_categories)
+	# original_dataframe[catColumnName] = original_dataframe[catColumnName].apply(modify_categories)
+	modifiedList = validCategories
 
 	for i in range(len(original_dataframe[catColumnName])):
 

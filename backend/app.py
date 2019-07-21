@@ -377,8 +377,9 @@ def clean_categorical_cols(categorical_json):
 	dict1={}
 	values = original_dataframe[catColumnName].value_counts().index.tolist()
 	for i in range(len(values)):
-		dict1[values[i]]=original_dataframe[catColumnName].value_counts()[i].astype(str)
-
+		dict1[values[i]]=int(original_dataframe[catColumnName].value_counts()[i])
+	
+	print(dict1)
 	print({'name': catColumnName, 'type': 'categorical', 'dirtyCount' : dirtyCount, 'categoryStats' : dict1})
 	socketio.emit('cleaningStepDataUpdate',	{'name': catColumnName, 'type': 'categorical', 'dirtyCount' : int(dirtyCount), 'categoryStats' : dict1})
 

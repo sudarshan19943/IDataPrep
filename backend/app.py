@@ -86,9 +86,9 @@ def parseDataOnPayload(json_data):
 def classifyDatasets(X_train, X_test, y_train, y_test,classifier,classifierName):
 
 	classifierTrainset = classifier.fit(X_train, y_train)
-	accTrain = classifierTrainset.score(X_train, y_train) * 100
+	accTrain = classifierTrainset.score(X_train, y_train)
 
-	accTest = classifierTrainset.score(X_test, y_test) * 100
+	accTest = classifierTrainset.score(X_test, y_test)
 	print('\t \t Accuracy of '+ classifierName +' on Test set: ' + str(accTest),'\n')
 
 	y_train_pred = classifierTrainset.predict(X_train)
@@ -101,7 +101,8 @@ def call_machine_learning_models():
 	global original_dataframe
 	global targetName
 
-	dict_accuracy = {}
+	accuracy_list = []
+	dict_keys = ['algo', 'efficiency']
 
 	data = np.array(original_dataframe.drop([targetName], axis=1))
 	target = np.array(original_dataframe[targetName])
@@ -111,31 +112,47 @@ def call_machine_learning_models():
 	clf_rf = RandomForestClassifier(bootstrap = True,max_depth= 12, n_estimators= 100)
 	acc_test_rf = classifyDatasets(X_train = X_train, X_test = X_test,y_train = y_train,y_test= y_test,classifier=clf_rf,
 															classifierName="Random Forest Classifier ")
-	dict_accuracy['Random Forest Classifier'] = acc_test_rf
-
+	
+	dict_values = ['RFC', acc_test_rf]
+	data = get_dic_from_two_lists(dict_keys, dict_values)
+	accuracy_list.append(data)
+	json.dumps(accuracy_list)
+												
 	clf_dt = DecisionTreeClassifier(max_depth=10)
 	acc_test_dt = classifyDatasets(X_train = X_train, X_test = X_test,y_train = y_train,y_test= y_test,classifier=clf_dt,
 															classifierName="Decision Tree Classifier ")
-	dict_accuracy['Decision Tree Classifier'] = acc_test_dt
+	dict_values = ['DTC', acc_test_dt]
+	data = get_dic_from_two_lists(dict_keys, dict_values)
+	accuracy_list.append(data)
+	json.dumps(accuracy_list)
 
 	clf_mlp = MLPClassifier()
 	acc_test_mlp= classifyDatasets(X_train = X_train, X_test = X_test,y_train = y_train,y_test= y_test,classifier=clf_mlp,
 															classifierName="Multilayer Perceptron Classifier ")
-	dict_accuracy['Multilayer Perceptron Classifier'] = acc_test_mlp
+	dict_values = ['MLP', acc_test_mlp]
+	data = get_dic_from_two_lists(dict_keys, dict_values)
+	accuracy_list.append(data)
+	json.dumps(accuracy_list)
 
 	logistic_regression_clf = LogisticRegression(penalty='l2',dual=False,max_iter=100)
 	acc_test_log= classifyDatasets(X_train = X_train, X_test = X_test,y_train = y_train,y_test= y_test,classifier=logistic_regression_clf,classifierName="Logistic Regression Classifier ")
 
-	dict_accuracy['Logistic Regression Classifier'] = acc_test_log
+	dict_values = ['LRC', acc_test_log]
+	data = get_dic_from_two_lists(dict_keys, dict_values)
+	accuracy_list.append(data)
+	json.dumps(accuracy_list)
 
 	clf_svc = SVC(C=1.0, kernel='linear')
 	acc_test_svm = classifyDatasets(X_train = X_train, X_test = X_test,y_train = y_train,y_test= y_test,classifier=clf_svc,
-															classifierName="Support Vector Machine Classifier ")
-	dict_accuracy['Support Vector Machine Classifier'] = acc_test_svm 
+															classifierName="Support Vector Machine Classifier ") 
+	dict_values = ['SVC', acc_test_svm]
+	data = get_dic_from_two_lists(dict_keys, dict_values)
+	accuracy_list.append(data)
+	json.dumps(accuracy_list)
   
-	sorted_x = sorted(dict_accuracy.items(), key=lambda kv: kv[1],reverse=True)
-	sortedDict = dict(sorted_x)
-	socketio.emit('algorithmAccuracy',{"rank":sortedDict})
+	print(sorted(accuracy_list, key = lambda i: i['efficiency']))
+	sorted_dict = sorted(accuracy_list, key = lambda i: i['efficiency'])
+	socketio.emit('algorithmAccuracy',sorted_dict)
 
 def read_the_csv(data,flag):
 	csvList = data.split('\n')

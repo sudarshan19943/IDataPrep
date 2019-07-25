@@ -15,6 +15,10 @@ rect.bar:hover{
         <mat-progress-bar [ngClass]="{'d-none' : ready}" class="mb-5" mode="query"></mat-progress-bar>
         
     </div>
+    
+<div class="mb-5 text-center">
+    <h3>Most efficient algorithm for this dataset: <span style="color: #df031d"> {{ algo["algo"] }} </span> with efficiency of <span style="color: #df031d"> {{ algo["efficiency"]*100 }}% </span></h3>
+  </div>
     <div id="accuracy-graph" #accuracygraph>
             
     </div>

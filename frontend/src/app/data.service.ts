@@ -20,6 +20,7 @@ export class DataService {
   cleaningStepDataUpdate: EventEmitter<any> = new EventEmitter();
   cleaningStepComplete: EventEmitter<any> = new EventEmitter();
   cleanedFileReady: EventEmitter<any> = new EventEmitter();
+  algorithmAccuracy: EventEmitter<any> = new EventEmitter();
 
   private socket;
 
@@ -148,6 +149,13 @@ export class DataService {
     this.socket.on('cleanedDatasetOutput', (data) => {
       _this.setStatus('Busy', 'Preparing Cleaned Dataset for download...');
       _this.cleanedFileReady.emit(data);
+    });
+
+    this.socket.on('algorithmAccuracy', (data) => {
+      console.log("HHHHHHHHHHHH");
+      _this.socket.send('Received Algorithm accuracy');
+      console.log(data);
+      _this.algorithmAccuracy.emit(data);
     });
 
     // this.socket.on('cleaningStepVisualisationData', function(step) {

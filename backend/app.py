@@ -362,6 +362,9 @@ def clean_categorical_cols(categorical_json):
 	modifiedList =list()
 	print(categorical_json)
 	validCategories = (categorical_json['preferences']['categories'])[0].lower().split(',')
+	for i in range(0, len(validCategories)):
+		validCategories[i] = validCategories[i].strip()
+	print(validCategories)
 	catColumnName = categorical_json['name']
 	original_dataframe[catColumnName] = original_dataframe[catColumnName].astype(str).apply(remove_chars)
 
@@ -386,7 +389,7 @@ def clean_categorical_cols(categorical_json):
 			if(original_dataframe[catColumnName][i] == modifiedList[j]):
 				original_dataframe[catColumnName].replace({original_dataframe[catColumnName][i]:validCategories[j]},inplace=True)
 				break
-			elif((difflib.SequenceMatcher(None,original_dataframe[catColumnName][i],modifiedList[j]).ratio()) >= 0.87):
+			elif((difflib.SequenceMatcher(None,original_dataframe[catColumnName][i].lower(),modifiedList[j]).ratio()) >= 0.87):
 				original_dataframe[catColumnName].replace({original_dataframe[catColumnName][i]:validCategories[j]},inplace=True)
 				dirtyCount = dirtyCount + 1
 				break

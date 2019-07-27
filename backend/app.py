@@ -361,7 +361,7 @@ def clean_categorical_cols(categorical_json):
 	dirtyCount = 0
 	modifiedList =list()
 	print(categorical_json)
-	validCategories = (categorical_json['preferences']['categories'])[0].split(',')
+	validCategories = (categorical_json['preferences']['categories'])[0].lower().split(',')
 	catColumnName = categorical_json['name']
 	original_dataframe[catColumnName] = original_dataframe[catColumnName].astype(str).apply(remove_chars)
 

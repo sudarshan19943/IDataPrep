@@ -30,24 +30,11 @@
         </div>
         <div *ngIf="feature.type == FeatureType.t2" class="col">
           <mat-form-field class="w-100">
-            <mat-chip-list #chipList aria-label="Fruit selection">
-              <mat-chip
-                *ngFor="let category of feature.preferences.categories"
-                [selectable]="true"
-                [removable]="true"
-                (removed)="removeCategory(i, category)"
-              >
-                {{ category }}
-                <mat-icon matChipRemove>cancel</mat-icon>
-              </mat-chip>
               <input
+                matInput
                 placeholder="Categories"
-                [matChipInputFor]="chipList"
-                [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
-                [matChipInputAddOnBlur]="true"
-                (matChipInputTokenEnd)="addCategory(i, $event)"
+                (input)="onInputCategory(i, $event)"
               />
-            </mat-chip-list>
           </mat-form-field>
         </div>
         <div *ngIf="feature.type == FeatureType.t1" class="col d-flex align-items-center justify-content-start">

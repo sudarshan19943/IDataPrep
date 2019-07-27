@@ -86,9 +86,9 @@ def parseDataOnPayload(json_data):
 def classifyDatasets(X_train, X_test, y_train, y_test,classifier,classifierName):
 
 	classifierTrainset = classifier.fit(X_train, y_train)
-	accTrain = classifierTrainset.score(X_train, y_train) * 100
+	accTrain = classifierTrainset.score(X_train, y_train)
 
-	accTest = classifierTrainset.score(X_test, y_test) * 100
+	accTest = classifierTrainset.score(X_test, y_test)
 	print('\t \t Accuracy of '+ classifierName +' on Test set: ' + str(accTest),'\n')
 
 	y_train_pred = classifierTrainset.predict(X_train)
@@ -101,7 +101,8 @@ def call_machine_learning_models():
 	global original_dataframe
 	global targetName
 
-	dict_accuracy = {}
+	accuracy_list = []
+	dict_keys = ['algo', 'efficiency']
 
 	data = np.array(original_dataframe.drop([targetName], axis=1))
 	target = np.array(original_dataframe[targetName])
@@ -111,31 +112,47 @@ def call_machine_learning_models():
 	clf_rf = RandomForestClassifier(bootstrap = True,max_depth= 12, n_estimators= 100)
 	acc_test_rf = classifyDatasets(X_train = X_train, X_test = X_test,y_train = y_train,y_test= y_test,classifier=clf_rf,
 															classifierName="Random Forest Classifier ")
-	dict_accuracy['Random Forest Classifier'] = acc_test_rf
-
+	
+	dict_values = ['RFC', acc_test_rf]
+	data = get_dic_from_two_lists(dict_keys, dict_values)
+	accuracy_list.append(data)
+	json.dumps(accuracy_list)
+												
 	clf_dt = DecisionTreeClassifier(max_depth=10)
 	acc_test_dt = classifyDatasets(X_train = X_train, X_test = X_test,y_train = y_train,y_test= y_test,classifier=clf_dt,
 															classifierName="Decision Tree Classifier ")
-	dict_accuracy['Decision Tree Classifier'] = acc_test_dt
+	dict_values = ['DTC', acc_test_dt]
+	data = get_dic_from_two_lists(dict_keys, dict_values)
+	accuracy_list.append(data)
+	json.dumps(accuracy_list)
 
 	clf_mlp = MLPClassifier()
 	acc_test_mlp= classifyDatasets(X_train = X_train, X_test = X_test,y_train = y_train,y_test= y_test,classifier=clf_mlp,
 															classifierName="Multilayer Perceptron Classifier ")
-	dict_accuracy['Multilayer Perceptron Classifier'] = acc_test_mlp
+	dict_values = ['MLP', acc_test_mlp]
+	data = get_dic_from_two_lists(dict_keys, dict_values)
+	accuracy_list.append(data)
+	json.dumps(accuracy_list)
 
 	logistic_regression_clf = LogisticRegression(penalty='l2',dual=False,max_iter=100)
 	acc_test_log= classifyDatasets(X_train = X_train, X_test = X_test,y_train = y_train,y_test= y_test,classifier=logistic_regression_clf,classifierName="Logistic Regression Classifier ")
 
-	dict_accuracy['Logistic Regression Classifier'] = acc_test_log
+	dict_values = ['LRC', acc_test_log]
+	data = get_dic_from_two_lists(dict_keys, dict_values)
+	accuracy_list.append(data)
+	json.dumps(accuracy_list)
 
 	clf_svc = SVC(C=1.0, kernel='linear')
 	acc_test_svm = classifyDatasets(X_train = X_train, X_test = X_test,y_train = y_train,y_test= y_test,classifier=clf_svc,
-															classifierName="Support Vector Machine Classifier ")
-	dict_accuracy['Support Vector Machine Classifier'] = acc_test_svm 
+															classifierName="Support Vector Machine Classifier ") 
+	dict_values = ['SVC', acc_test_svm]
+	data = get_dic_from_two_lists(dict_keys, dict_values)
+	accuracy_list.append(data)
+	json.dumps(accuracy_list)
   
-	sorted_x = sorted(dict_accuracy.items(), key=lambda kv: kv[1],reverse=True)
-	sortedDict = dict(sorted_x)
-	socketio.emit('algorithmAccuracy',{"rank":sortedDict})
+	print(sorted(accuracy_list, key = lambda i: i['efficiency']))
+	sorted_dict = sorted(accuracy_list, key = lambda i: i['efficiency'])
+	socketio.emit('algorithmAccuracy',sorted_dict)
 
 def read_the_csv(data,flag):
 	csvList = data.split('\n')
@@ -249,12 +266,14 @@ def clean_numeric_cols(numeric_json):
 	numericColumnName = numeric_json['name']
 	totalCounts = original_dataframe[numericColumnName].shape[0]
 	countOfNumericNan = (original_dataframe[numericColumnName] == np.nan).astype(int).sum(axis=0)
+	countOfZeros = (original_dataframe[numericColumnName] == 0).astype(int).sum(axis=0)
+	countOfNegatives = (original_dataframe[numericColumnName] < 0).astype(int).sum(axis=0)
+	print(f"total: {totalCounts}, nan:{countOfNumericNan}, zero: {countOfZeros}, neg:{countOfNegatives}")
 	original_dataframe.dropna(inplace=True)
 	original_dataframe.reset_index(drop=True,inplace=True)
 
 	if(isNegativeAllowed == False and isZeroAllowed==True): 
 
-		countOfNegatives = (original_dataframe[numericColumnName] <= 0).astype(int).sum(axis=0)
 		original_dataframe[numericColumnName][original_dataframe[numericColumnName] < 0] = np.nan
 		original_dataframe.dropna(inplace=True)
 		original_dataframe.reset_index(drop=True,inplace=True)
@@ -264,7 +283,6 @@ def clean_numeric_cols(numeric_json):
 
 	elif(isZeroAllowed == False and isNegativeAllowed == True):
 		
-		countOfZeros = (original_dataframe[numericColumnName] == 0).astype(int).sum(axis=0)
 		median = original_dataframe[numericColumnName].median(skipna=True)
 		original_dataframe[numericColumnName][original_dataframe[numericColumnName] == 0] = median
 		validCounts  = totalCounts - (countOfNumericNan + countOfZeros)
@@ -273,15 +291,15 @@ def clean_numeric_cols(numeric_json):
 
 	elif(isZeroAllowed == False and isNegativeAllowed == False):
 
-		countOfZeros = (original_dataframe[numericColumnName] == 0).astype(int).sum(axis=0)
-		countOfNegatives = (original_dataframe[numericColumnName] <= 0).astype(int).sum(axis=0)
 		median = original_dataframe[numericColumnName].median(skipna=True)
 		original_dataframe[numericColumnName][original_dataframe[numericColumnName] == 0] = median
 		original_dataframe[numericColumnName][original_dataframe[numericColumnName] < 0] = np.nan
 		original_dataframe.dropna(inplace=True)
 		original_dataframe.reset_index(drop=True,inplace=True)
-		countOfNegatives = (original_dataframe[numericColumnName] <= 0).astype(int).sum(axis=0)
 		validCounts  = totalCounts - (countOfNumericNan + countOfZeros + countOfNegatives)
+		print('cleaningStepDataUpdate', {'name': numericColumnName, 'type': 'numeric', 
+		'validCount' : int(validCounts), 'dirtyStats' : {'nan': int(countOfNumericNan), 'zero': int(countOfZeros),
+			'neg': int(countOfNegatives)}})
 		socketio.emit('cleaningStepDataUpdate', {'name': numericColumnName, 'type': 'numeric', 
 		'validCount' : int(validCounts), 'dirtyStats' : {'nan': int(countOfNumericNan), 'zero': int(countOfZeros),
 			'neg': int(countOfNegatives)}})
@@ -342,6 +360,7 @@ def clean_categorical_cols(categorical_json):
 	global original_dataframe
 	dirtyCount = 0
 	modifiedList =list()
+	print(categorical_json)
 	validCategories = (categorical_json['preferences']['categories'])[0].split(',')
 	catColumnName = categorical_json['name']
 	original_dataframe[catColumnName] = original_dataframe[catColumnName].astype(str).apply(remove_chars)

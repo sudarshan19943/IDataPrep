@@ -157,11 +157,7 @@ export class CleaningVisualizationComponent implements OnInit {
       total += dirtyTotal;
     }
 
-    const onMouseOverChart = function(d, i) {
-      d3.selectAll('.chart').style('opacity', '.3');
-
-      d3.select(this).style('opacity', '1');
-
+    const onMouseOverArc = function(d, i) {
       d3.select(this)
         .selectAll('.categoryLabel')
         .transition(`catLabelOpacityToggle-${i}`)
@@ -170,14 +166,21 @@ export class CleaningVisualizationComponent implements OnInit {
         .style('opacity', '1');
     };
 
-    const onMouseLeaveChart = function(d, i) {
+    const onMouseLeaveArc = function(d, i) {
       d3.select(this)
         .selectAll('.categoryLabel')
         .transition(`catLabelOpacityToggle-${i}`)
         .ease(d3.easeLinear)
         .duration(50)
         .style('opacity', '0');
+    };
 
+    const onMouseOverChart = function(d, i) {
+      d3.selectAll('.chart').style('opacity', '.3');
+      d3.select(this).style('opacity', '1');
+    };
+
+    const onMouseLeaveChart = function(d, i) {
       d3.selectAll('.chart')
         .transition(`chartOpacityToggle-${i}-0`)
         .ease(d3.easeLinear)
@@ -233,7 +236,9 @@ export class CleaningVisualizationComponent implements OnInit {
       .data(arcs)
       .enter()
       .append('g')
-      .classed('arc', true);
+      .classed('arc', true)
+      .on('mouseover', onMouseOverArc)
+      .on('mouseleave', onMouseLeaveArc);
 
     arcsGroup
       .append('path')
@@ -252,13 +257,10 @@ export class CleaningVisualizationComponent implements OnInit {
       .attr(
         'transform',
         (d, i) =>
-          `translate(${
-            data.arcCategories[i][2] === 'clean'
-              ? cleanLabelArc.centroid(d)
-              : dirtyLabelArc.centroid(d)
-          })`
+          `translate(${-(28 + `${data.arcCategories[i][0]} - (${Math.round(d.data / total * 1000) / 10}%)`.length * 10) / 2},${-190})`
       )
-      .classed(`categoryLabel`, true)
+      .attr('class', (d, i) => `categoryLabel categoryLabel-${i}`)
+      .attr('text-anchor', 'middle')
       .style('opacity', '0');
 
     categoryLabels
@@ -269,7 +271,7 @@ export class CleaningVisualizationComponent implements OnInit {
       .attr('y', 0)
       .attr('rx', 15)
       .attr('ry', 15)
-      .attr('width', (d, i) => 28 + data.arcCategories[i][0].length * 10)
+      .attr('width', (d, i) => 28 + `${data.arcCategories[i][0]} - (${Math.round(d.data / total * 1000) / 10}%)`.length * 10)
       .attr('height', 25)
       .style('fill', 'white')
       .style('opacity', '.8');
@@ -286,7 +288,7 @@ export class CleaningVisualizationComponent implements OnInit {
       .append('text')
       .attr('x', 18)
       .attr('y', 3)
-      .text((d, i) => `${data.arcCategories[i][0]}`)
+      .text((d, i) => `${data.arcCategories[i][0]} - (${Math.round(d.data / total * 1000) / 10}%)`)
       .attr('text-anchor', 'start')
       .attr('alignment-baseline', 'hanging')
       .classed('category-label', true)

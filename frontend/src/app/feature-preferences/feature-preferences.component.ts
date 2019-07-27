@@ -32,34 +32,15 @@ export class FeaturePreferencesComponent implements OnInit {
       feature.preferences = feature.preferences ? feature.preferences : {};
       feature.preferences.zeroAllowed = feature.preferences.zeroAllowed === undefined ? false : feature.preferences.zeroAllowed;
       feature.preferences.negativeAllowed = feature.preferences.negativeAllowed === undefined ? false : feature.preferences.negativeAllowed;
-      feature.preferences.categories = feature.preferences.categories === undefined ? [] : feature.preferences.categories;
+      feature.preferences.categories = feature.preferences.categories === undefined ? [''] : feature.preferences.categories;
     });
     this.featuresReceived = _received;
     this.targetFeatureindex = _received.length - 1;
   }
 
-  addCategory(featureIndex: any, event: MatChipInputEvent): void {
-    const input = event.input;
-    const value = event.value;
-
-    if ((value || '').trim()) {
-      this.featuresReceived[featureIndex].preferences.categories.push(value.trim());
-    }
-
-    if (input) {
-      input.value = '';
-    }
-    console.log(this.featuresReceived[featureIndex].preferences.categories);
-  }
-
-  removeCategory(featureIndex: any, category: String): void {
-    const index = this.featuresReceived[featureIndex].preferences.categories.indexOf(category);
-
-    if (index >= 0) {
-      this.featuresReceived[featureIndex].preferences.categories.splice(index, 1);
-    }
-    console.log(this.featuresReceived[featureIndex].preferences.categories);
-
+  onInputCategory(featureIndex: any, event: any): void {
+    const value = event.target.value;
+    this.featuresReceived[featureIndex].preferences.categories[0] = value.trim();
   }
 
   onZeroAllowedChange(featureIndex, event: any) {

@@ -1,13 +1,15 @@
 import {
-  Component, OnInit,
+  Component,
+  OnInit,
   ViewChild,
   Renderer2,
-  ElementRef
+  ElementRef,
+  Output,
+  EventEmitter
 } from '@angular/core';
 import { DataService } from '../data.service';
 import * as d3 from 'd3';
-import d3Tip from "d3-tip"
-
+import d3Tip from 'd3-tip';
 
 @Component({
   selector: 'app-algorithms-suggestion',
@@ -15,7 +17,6 @@ import d3Tip from "d3-tip"
   styleUrls: ['./algorithms-suggestion.component.scss']
 })
 export class AlgorithmsSuggestionComponent implements OnInit {
-
   ready = false;
   done = false;
   svg;
@@ -23,6 +24,7 @@ export class AlgorithmsSuggestionComponent implements OnInit {
   dataRanking = [];
   sortedRanking = [];
   algo;
+  @Output() completed = new EventEmitter<boolean>();
 
   @ViewChild('accuracygraph', { static: true }) accuracyGraph: ElementRef;
 
@@ -32,28 +34,30 @@ export class AlgorithmsSuggestionComponent implements OnInit {
   graphWidth = 800;
   margin = { top: 20, right: 20, bottom: 30, left: 40 };
 
-  constructor(private dataservice: DataService, private renderer: Renderer2) { }
+  constructor(private dataservice: DataService, private renderer: Renderer2) {}
 
   ngOnInit() {
-
     this.chartViz = this.accuracyGraph.nativeElement;
-    console.log("ChartViz=", this.chartViz);
+    console.log('ChartViz=', this.chartViz);
     this.dataservice.algorithmAccuracy.subscribe(accurayData => {
       this.ready = true;
-      console.log("Accuracies:", accurayData);
+      console.log('Accuracies:', accurayData);
       this.dataRanking = accurayData;
-
 
       this.sortedRanking = this.dataRanking.sort(this.highToLow);
       console.log(this.sortedRanking);
       this.algo = this.sortedRanking[0];
       console.log(this.algo);
 
-      this.svg = d3.select(this.chartViz).append('svg')
+      this.svg = d3
+        .select(this.chartViz)
+        .append('svg')
         .attr('width', this.chartViz.offsetWidth)
         .attr('height', this.chartViz.offsetHeight + 100);
-      const contentWidth = this.chartViz.offsetWidth - this.margin.left - this.margin.right;
-      const contentHeight = this.chartViz.offsetHeight - this.margin.top - this.margin.bottom;
+      const contentWidth =
+        this.chartViz.offsetWidth - this.margin.left - this.margin.right;
+      const contentHeight =
+        this.chartViz.offsetHeight - this.margin.top - this.margin.bottom;
       const x = d3
         .scaleBand()
         .rangeRound([0, contentWidth - 50])
@@ -64,15 +68,22 @@ export class AlgorithmsSuggestionComponent implements OnInit {
         .rangeRound([contentHeight, 0])
         .domain([0, d3.max(this.dataRanking, d => d.efficiency)]);
 
+      const g = this.svg
+        .append('g')
+        .attr(
+          'transform',
+          'translate(' + this.margin.left + ',' + this.margin.top + ')'
+        );
 
-      const g = this.svg.append('g')
-        .attr('transform', 'translate(' + this.margin.left + ',' + this.margin.top + ')');
-
-      var tip = d3Tip()
+      const tip = d3Tip()
         .attr('class', 'd3-tip')
         .offset([-10, 0])
         .html(d => {
-          return "<strong>Accuracy:</strong> <span style='color:red'>" + d.efficiency * 100 + "%</span>";
+          return (
+            '<strong>Accuracy:</strong> <span style=\'color:red\'>' +
+            d.efficiency * 100 +
+            '%</span>'
+          );
         });
 
       this.svg.call(tip);
@@ -94,7 +105,8 @@ export class AlgorithmsSuggestionComponent implements OnInit {
 
       g.selectAll('.bar')
         .data(this.dataRanking)
-        .enter().append('rect')
+        .enter()
+        .append('rect')
         .attr('class', 'bar')
         .attr('fill', '#df031d')
         .attr('x', d => x(d.algo))
@@ -103,15 +115,18 @@ export class AlgorithmsSuggestionComponent implements OnInit {
         .attr('height', d => contentHeight - y(d.efficiency))
         .on('mouseover', tip.show)
         .on('mouseout', tip.hide);
+
+      this.completed.emit(true);
     });
-
   }
-
 
   highToLow(a: any, b: any) {
-    if (a.efficiency < b.efficiency) return 1
-    else if (a.efficiency === b.efficiency) return 0
-    else return -1;
+    if (a.efficiency < b.efficiency) {
+      return 1;
+    } else if (a.efficiency === b.efficiency) {
+      return 0;
+    } else {
+      return -1;
+    }
   }
-
 }

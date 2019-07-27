@@ -266,12 +266,14 @@ def clean_numeric_cols(numeric_json):
 	numericColumnName = numeric_json['name']
 	totalCounts = original_dataframe[numericColumnName].shape[0]
 	countOfNumericNan = (original_dataframe[numericColumnName] == np.nan).astype(int).sum(axis=0)
+	countOfZeros = (original_dataframe[numericColumnName] == 0).astype(int).sum(axis=0)
+	countOfNegatives = (original_dataframe[numericColumnName] < 0).astype(int).sum(axis=0)
+	print(f"total: {totalCounts}, nan:{countOfNumericNan}, zero: {countOfZeros}, neg:{countOfNegatives}")
 	original_dataframe.dropna(inplace=True)
 	original_dataframe.reset_index(drop=True,inplace=True)
 
 	if(isNegativeAllowed == False and isZeroAllowed==True): 
 
-		countOfNegatives = (original_dataframe[numericColumnName] <= 0).astype(int).sum(axis=0)
 		original_dataframe[numericColumnName][original_dataframe[numericColumnName] < 0] = np.nan
 		original_dataframe.dropna(inplace=True)
 		original_dataframe.reset_index(drop=True,inplace=True)
@@ -281,7 +283,6 @@ def clean_numeric_cols(numeric_json):
 
 	elif(isZeroAllowed == False and isNegativeAllowed == True):
 		
-		countOfZeros = (original_dataframe[numericColumnName] == 0).astype(int).sum(axis=0)
 		median = original_dataframe[numericColumnName].median(skipna=True)
 		original_dataframe[numericColumnName][original_dataframe[numericColumnName] == 0] = median
 		validCounts  = totalCounts - (countOfNumericNan + countOfZeros)
@@ -290,15 +291,15 @@ def clean_numeric_cols(numeric_json):
 
 	elif(isZeroAllowed == False and isNegativeAllowed == False):
 
-		countOfZeros = (original_dataframe[numericColumnName] == 0).astype(int).sum(axis=0)
-		countOfNegatives = (original_dataframe[numericColumnName] <= 0).astype(int).sum(axis=0)
 		median = original_dataframe[numericColumnName].median(skipna=True)
 		original_dataframe[numericColumnName][original_dataframe[numericColumnName] == 0] = median
 		original_dataframe[numericColumnName][original_dataframe[numericColumnName] < 0] = np.nan
 		original_dataframe.dropna(inplace=True)
 		original_dataframe.reset_index(drop=True,inplace=True)
-		countOfNegatives = (original_dataframe[numericColumnName] <= 0).astype(int).sum(axis=0)
 		validCounts  = totalCounts - (countOfNumericNan + countOfZeros + countOfNegatives)
+		print('cleaningStepDataUpdate', {'name': numericColumnName, 'type': 'numeric', 
+		'validCount' : int(validCounts), 'dirtyStats' : {'nan': int(countOfNumericNan), 'zero': int(countOfZeros),
+			'neg': int(countOfNegatives)}})
 		socketio.emit('cleaningStepDataUpdate', {'name': numericColumnName, 'type': 'numeric', 
 		'validCount' : int(validCounts), 'dirtyStats' : {'nan': int(countOfNumericNan), 'zero': int(countOfZeros),
 			'neg': int(countOfNegatives)}})
@@ -359,6 +360,7 @@ def clean_categorical_cols(categorical_json):
 	global original_dataframe
 	dirtyCount = 0
 	modifiedList =list()
+	print(categorical_json)
 	validCategories = (categorical_json['preferences']['categories'])[0].split(',')
 	catColumnName = categorical_json['name']
 	original_dataframe[catColumnName] = original_dataframe[catColumnName].astype(str).apply(remove_chars)

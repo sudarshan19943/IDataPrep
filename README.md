@@ -2,6 +2,9 @@
 
 IDataPrep is an interactive web application which provides the user with clean dataset and visualization statistics at each step of cleaning the dataset. Data exploration, handling and its processing have emerged as the most reliable source of understanding and discovery of new facts. Under practical conditions, large datasets have lots of inconsistencies. For accurate data mining, it is required that the data be accurately preprocessed and cleaned. The quality of data is directly proportional to the success of machine learning algorithms applied on it. IDataPrep cleans any dataset consisting of categorical and numeric data and provides a suggestion to the user about the most efficient classifier that can be applied on the dataset in accordance with the target attribute provided by the user.
 
+# Architecture
+IDataPrep has mainly a front-end and a back-end associated with it. The front-end has been built using Angular 7 and the back-end has been developed using Python Flask.The main components of the web application are shown below:
+
 
 # Instructions to run the project:
 

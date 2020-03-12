@@ -5,9 +5,27 @@ IDataPrep is an interactive web application which provides the user with clean d
 # Architecture
 IDataPrep has mainly a front-end and a back-end associated with it. The front-end has been built using Angular 7 and the back-end has been developed using Python Flask. The main components of the web application are shown below:
 
-![](Flowdiagram.png)
+![](flow_diagram.png)
 
+The File Upload component accepts a valid csv dataset from the user and also allows the user to specify if the dataset has headers and if the preprocessing is for a classification process.
 
+The Feature Cleaning Preferences component gives the user the option to treat the way each feature is cleaned. The user can also alter the name of each feature and label features without headers. The user is expected to enter the valid categories for categorical features in a comma separated list.
+
+The Dataset Cleaning component visualizes each feature cleaning step and displays the dirtiness ratio of each feature along with other statistics.
+
+The Classification Algorithm suggestion suggests to the user the classification algorithm to use based on the accuracy scored computed.
+
+The File Download component lets the user to download the cleaned file as a csv.
+
+# Sample screenshots of the application
+
+![](Picture2.png)
+
+![](Picture3.png)
+
+![](Picture4.png)
+
+![](Picture5.png)
 
 # Instructions to run the project:
 

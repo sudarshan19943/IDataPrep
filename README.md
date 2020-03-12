@@ -1,8 +1,6 @@
 # IDataPrep
 
-IDataPrep is an interactive web application which provides the user with clean dataset and visualization
-statistics at each step of cleaning the dataset. IDataPrep cleans any dataset consisting of only categorical
-and numeric data. The application also lets users to classify datasets based on the target attribute and suggests to the user the best classifier that can be used on a given dataset.
+IDataPrep is an interactive web application which provides the user with clean dataset and visualization statistics at each step of cleaning the dataset. Data exploration, handling and its processing have emerged as the most reliable source of understanding and discovery of new facts. Under practical conditions, large datasets have lots of inconsistencies. For accurate data mining, it is required that the data be accurately preprocessed and cleaned. The quality of data is directly proportional to the success of machine learning algorithms applied on it. IDataPrep cleans any dataset consisting of categorical and numeric data and provides a suggestion to the user about the most efficient classifier that can be applied on the dataset in accordance with the target attribute provided by the user.
 
 
 # Instructions to run the project:
